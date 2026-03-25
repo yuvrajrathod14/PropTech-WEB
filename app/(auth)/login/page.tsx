@@ -3,6 +3,8 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +13,7 @@ import { AuthShell } from "@/components/auth/auth-shell"
 import { Mail, Lock, Loader2, Eye, EyeOff, Smartphone, Key, ShieldCheck, User, Store } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { loginSchema, LoginInput } from "@/lib/validations/auth"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,18 +23,24 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [activeTab, setActiveTab] = useState("phone")
-  console.log("Current tab:", activeTab) // Added to use the variable
 
-  // Email state
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-
-  // Phone state
+  // Phone state (keeping separate as it's a different flow)
   const [phone, setPhone] = useState("")
 
+  // React Hook Form for Email Login
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    mode: "onBlur"
+  })
+
   const loginAs = async (demoEmail: string) => {
-    setEmail(demoEmail)
-    setPassword("demo1234")
+    setValue("email", demoEmail)
+    setValue("password", "demo1234")
     setIsLoading(true)
     try {
       const { error } = await supabase.auth.signInWithPassword({ 
@@ -77,11 +86,13 @@ export default function LoginPage() {
     }
   }
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onEmailLogin = async (data: LoginInput) => {
     setIsLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email: data.email, 
+        password: data.password 
+      })
       if (error) throw error
       toast({ title: "Welcome back!", description: "Successfully logged in." })
       
@@ -96,17 +107,14 @@ export default function LoginPage() {
         return
       }
 
-      // Rule 6: Handle redirect after login
       const cookies = document.cookie.split("; ")
       const redirectCookie = cookies.find(row => row.startsWith("redirect_after_login="))
       let redirectPath = "/"
       
       if (redirectCookie) {
         redirectPath = decodeURIComponent(redirectCookie.split("=")[1])
-        // Clear the cookie
         document.cookie = "redirect_after_login=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
       } else {
-        // Default role-based redirect
         const role = profile?.role || user?.user_metadata?.role
         redirectPath = role === "admin" || role === "super_admin" 
           ? "/admin/dashboard" 
@@ -143,7 +151,6 @@ export default function LoginPage() {
       if (error) throw error
       
       toast({ title: "OTP Sent", description: `Verification code sent to +91 ${phone}` })
-      // Redirect to verify page with phone as param
       router.push(`/verify?phone=${phone}`)
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred"
@@ -176,7 +183,7 @@ export default function LoginPage() {
           <p className="text-slate-500 font-medium text-sm mt-2">Choose your preferred login method</p>
         </div>
 
-        <Tabs defaultValue="phone" className="w-full" onValueChange={setActiveTab}>
+        <Tabs defaultValue="phone" className="w-full" onValueChange={setActiveTab} value={activeTab}>
           <TabsList className="grid grid-cols-2 mb-8 bg-slate-100 p-1.5 rounded-2xl h-14">
             <TabsTrigger value="phone" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm font-bold flex gap-2">
               <Smartphone className="w-4 h-4" />
@@ -193,7 +200,7 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <Label htmlFor="phone" className="font-bold text-slate-700 ml-1">Phone Number</Label>
                 <div className="relative flex group">
-                   <div className="flex items-center justify-center px-4 bg-slate-50 border border-r-0 border-slate-200 text-slate-500 font-bold rounded-l-2xl text-sm">
+                   <div className="flex items-center justify-center px-4 bg-slate-50 border border-r-0 border-slate-200 text-slate-500 font-bold rounded-l-2xl text-sm transition-colors group-focus-within:border-primary group-focus-within:bg-blue-50/50">
                     +91
                    </div>
                    <Input 
@@ -203,29 +210,30 @@ export default function LoginPage() {
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     className="rounded-l-none rounded-r-2xl h-12 bg-white border-slate-200 focus:border-primary focus:ring-primary font-bold text-lg"
                     required
+                    disabled={isLoading}
                    />
                 </div>
               </div>
-              <Button className="w-full h-14 bg-[#1A56DB] hover:bg-[#1341A8] text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-95" disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin" /> : "Send OTP"}
+              <Button className="w-full h-14 bg-[#1A56DB] hover:bg-[#1341A8] text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2" disabled={isLoading}>
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send OTP"}
               </Button>
             </form>
           </TabsContent>
 
           <TabsContent value="email">
-            <form onSubmit={handleEmailLogin} className="space-y-5">
+            <form onSubmit={handleSubmit(onEmailLogin)} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email" className="font-bold text-slate-700 ml-1">Email Address</Label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors z-10" />
                   <Input 
                     id="email"
                     type="email"
                     placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    {...register("email")}
+                    error={errors.email?.message}
                     className="pl-12 h-12 rounded-2xl bg-white border-slate-200 focus:border-primary focus:ring-primary font-medium"
-                    required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -236,28 +244,28 @@ export default function LoginPage() {
                   <Link href="/forgot-password" title="Forgot Password" className="text-xs font-bold text-primary hover:underline">Forgot Password?</Link>
                 </div>
                 <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors z-10" />
                   <Input 
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 pr-12 h-12 rounded-2xl bg-white border-slate-200 focus:border-primary focus:ring-primary font-medium"
-                    required
+                    {...register("password")}
+                    error={errors.password?.message}
+                    className="pl-12 pr-12 h-12 rounded-2xl bg-white border-slate-200 focus:border-primary focus:ring-primary font-medium text-lg leading-none"
+                    disabled={isLoading}
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    className="absolute right-4 top-6 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors z-10"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
 
-              <Button className="w-full h-14 bg-[#1A56DB] hover:bg-[#1341A8] text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-95" disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin" /> : "Sign In"}
+              <Button className="w-full h-14 bg-[#1A56DB] hover:bg-[#1341A8] text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2" disabled={isLoading}>
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign In"}
               </Button>
             </form>
           </TabsContent>
@@ -268,14 +276,14 @@ export default function LoginPage() {
             <div className="w-full border-t border-slate-100"></div>
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-4 text-slate-400 font-bold">Or continue with</span>
+            <span className="bg-white px-4 text-slate-400 font-bold tracking-widest">Or continue with</span>
           </div>
         </div>
 
         <Button 
           variant="outline" 
           onClick={handleGoogleLogin}
-          className="w-full h-14 border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl flex gap-3 transition-all active:scale-95"
+          className="w-full h-14 border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl flex gap-3 transition-all active:scale-95 shadow-sm"
           disabled={isLoading}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -288,15 +296,15 @@ export default function LoginPage() {
         </Button>
 
         <div className="pt-2">
-          <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Quick Demo Access</p>
+          <p className="text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Quick Demo Access</p>
           <div className="grid grid-cols-3 gap-3">
             <button 
               onClick={() => loginAs('buyer@demo.com')}
               disabled={isLoading}
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group disabled:opacity-50"
             >
-              <User className="w-5 h-5 text-slate-400 group-hover:text-blue-500 mb-1" />
-              <span className="text-[10px] font-black text-slate-600 group-hover:text-blue-700">BUYER</span>
+              <User className="w-5 h-5 text-slate-400 group-hover:text-[#1A56DB] mb-1" />
+              <span className="text-[10px] font-black text-slate-600 group-hover:text-[#1A56DB]">BUYER</span>
             </button>
             <button 
               onClick={() => loginAs('owner@demo.com')}
@@ -319,7 +327,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-slate-500 font-medium">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-[#1A56DB] font-black hover:underline">Register here</Link>
+          <Link href="/register" className="text-[#1A56DB] font-black hover:underline uppercase tracking-wider text-xs">Register here</Link>
         </p>
       </div>
     </AuthShell>

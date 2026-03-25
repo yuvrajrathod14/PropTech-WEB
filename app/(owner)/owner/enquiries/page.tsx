@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { GridRowSkeleton } from "@/components/ui/skeleton"
 
 const mockEnquiries = [
   { id: "1", name: "Aryan Kumar", property: "Luxury Villa in Shela", msg: "I'm interested in the 3BHK. Is the price negotiable? I would like to visit this Saturday.", time: "2h ago", status: "New", phone: "+91 98*** **450", email: "ary***@example.com" },
@@ -39,15 +40,7 @@ const mockEnquiries = [
 
 export default function EnquiriesPage() {
   const [searchQuery, setSearchQuery] = useState("")
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'New': return 'bg-primary text-white border-none'
-      case 'Read': return 'bg-slate-100 text-slate-600 border-slate-200'
-      case 'Replied': return 'bg-emerald-50 text-emerald-600 border-emerald-100'
-      default: return 'bg-slate-50 text-slate-600'
-    }
-  }
+  const [isLoading, setIsLoading] = useState(false)
 
   return (
     <div className="space-y-8 pb-20">
@@ -61,7 +54,7 @@ export default function EnquiriesPage() {
           <Button variant="outline" className="h-12 rounded-2xl border-slate-100 bg-white font-bold gap-2">
             <Download className="w-4 h-4" /> Export
           </Button>
-          <Button className="h-12 rounded-2xl bg-primary hover:bg-primary-dark font-black gap-2 shadow-xl shadow-primary/20 transition-all active:scale-95 px-6 italic">
+          <Button className="h-12 rounded-2xl bg-[#1A56DB] hover:bg-[#1A56DB]/90 text-white font-black gap-2 shadow-xl shadow-[#1A56DB]/20 transition-all active:scale-95 px-6 italic">
             <Archive className="w-4 h-4" /> CRM Archive
           </Button>
         </div>
@@ -92,7 +85,7 @@ export default function EnquiriesPage() {
                                 key={i} 
                                 className={cn(
                                     "w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all",
-                                    i === 0 ? "bg-primary/5 text-primary" : "text-slate-500 hover:bg-slate-50"
+                                    i === 0 ? "bg-[#1A56DB]/5 text-[#1A56DB]" : "text-slate-500 hover:bg-slate-50"
                                 )}
                             >
                                 {f}
@@ -120,7 +113,7 @@ export default function EnquiriesPage() {
             </Card>
 
             <div className="bg-slate-900 rounded-[32px] p-6 text-white space-y-4 shadow-xl">
-                 <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                 <div className="w-10 h-10 rounded-xl bg-[#1A56DB] flex items-center justify-center">
                     <Sparkles className="w-6 h-6 text-white" />
                  </div>
                  <h4 className="text-lg font-black italic tracking-tight">AI Insights</h4>
@@ -133,20 +126,22 @@ export default function EnquiriesPage() {
 
         {/* Enquiries List */}
         <div className="lg:col-span-3 space-y-4">
-            {mockEnquiries.map((enquiry) => (
-                <div key={enquiry.id} className="bg-white rounded-[32px] border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all group overflow-hidden">
+            {isLoading ? (
+                Array(5).fill(0).map((_, i) => <GridRowSkeleton key={i} />)
+            ) : mockEnquiries.map((enquiry) => (
+                <div key={enquiry.id} className="bg-white rounded-[32px] border border-slate-100 shadow-sm hover:shadow-xl hover:border-[#1A56DB]/20 transition-all group overflow-hidden">
                     <div className="flex flex-col md:flex-row">
                         <div className="p-8 flex-1 space-y-6">
                             {/* Enquiry Header */}
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-4">
                                     <Avatar className="w-14 h-14 border-4 border-slate-50 shadow-sm">
-                                        <AvatarFallback className="bg-primary/5 text-primary text-lg font-black">{enquiry.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                                        <AvatarFallback className="bg-[#1A56DB]/5 text-[#1A56DB] text-lg font-black">{enquiry.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
                                     </Avatar>
                                     <div>
                                         <div className="flex items-center gap-3">
                                             <h3 className="text-xl font-black text-slate-900 tracking-tight">{enquiry.name}</h3>
-                                            <Badge className={cn("rounded-full font-black text-[9px] uppercase tracking-widest px-3", getStatusColor(enquiry.status))}>
+                                            <Badge variant={enquiry.status === "New" ? "default" : enquiry.status === "Read" ? "draft" : "approved" as any} className="rounded-full font-black text-[9px] uppercase tracking-widest px-3 border-none shadow-none">
                                                 {enquiry.status}
                                             </Badge>
                                         </div>
@@ -177,8 +172,8 @@ export default function EnquiriesPage() {
                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
                                     <MessageSquare className="w-12 h-12" />
                                 </div>
-                                <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">Enquired about:</p>
-                                <p className="text-sm font-black text-slate-900 group-hover:text-primary transition-colors cursor-pointer flex items-center gap-2 mb-4">
+                                <p className="text-[10px] font-black text-[#1A56DB] uppercase tracking-widest mb-3">Enquired about:</p>
+                                <p className="text-sm font-black text-slate-900 group-hover:text-[#1A56DB] transition-colors cursor-pointer flex items-center gap-2 mb-4">
                                     {enquiry.property}
                                     <ArrowUpRight className="w-4 h-4" />
                                 </p>
@@ -194,10 +189,10 @@ export default function EnquiriesPage() {
                                     Reply via Chat
                                 </Button>
                                 <Button variant="outline" className="h-12 rounded-2xl border-slate-100 font-bold px-6 gap-2 hover:bg-slate-50">
-                                    <Phone className="w-4 h-4 text-primary" /> Call Buyer
+                                    <Phone className="w-4 h-4 text-[#1A56DB]" /> Call Buyer
                                 </Button>
                                 <Button variant="outline" className="h-12 rounded-2xl border-slate-100 font-bold px-6 gap-2 hover:bg-slate-50">
-                                    <Mail className="w-4 h-4 text-primary" /> Email
+                                    <Mail className="w-4 h-4 text-[#1A56DB]" /> Email
                                 </Button>
                             </div>
                         </div>
@@ -222,7 +217,7 @@ export default function EnquiriesPage() {
             ))}
 
             <div className="flex items-center justify-center pt-8">
-                 <Button variant="ghost" className="text-slate-400 font-black uppercase text-xs tracking-widest gap-2 hover:text-primary transition-all">
+                 <Button variant="ghost" className="text-slate-400 font-black uppercase text-xs tracking-widest gap-2 hover:text-[#1A56DB] transition-all">
                     Load More Enquiries <ChevronRight className="w-4 h-4" />
                  </Button>
             </div>

@@ -28,14 +28,40 @@ import {
     DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 
-const kpis = [
-  { label: "Total Revenue", value: "₹12.4L", change: "+14.2%", icon: CreditCard, color: "bg-emerald-500", trend: "up" },
-  { label: "Active Listings", value: "842", change: "+5.1%", icon: Home, color: "bg-blue-500", trend: "up" },
-  { label: "New Users", value: "156", change: "-2.4%", icon: Users, color: "bg-primary", trend: "down" },
-  { label: "Avg. Session", value: "4m 20s", change: "+12%", icon: Activity, color: "bg-amber-500", trend: "up" },
-]
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { StatCardSkeleton } from "@/components/ui/skeleton"
 
 export default function AdminDashboard() {
+  const supabase = createClient()
+  const [stats, setStats] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchAdminStats() {
+      setIsLoading(true)
+      try {
+        const [usersRes, propsRes, pendingRes] = await Promise.all([
+          supabase.from("profiles").select("id", { count: "exact" }),
+          supabase.from("properties").select("id", { count: "exact" }),
+          supabase.from("properties").select("id", { count: "exact" }).eq("status", "pending")
+        ])
+
+        setStats([
+          { label: "Total Revenue", value: "₹12.4L", change: "+14.2%", icon: CreditCard, color: "bg-emerald-500", trend: "up" },
+          { label: "Active Listings", value: propsRes.count || 0, change: "+5.1%", icon: Home, color: "bg-blue-500", trend: "up" },
+          { label: "Total Users", value: usersRes.count || 0, change: "+14", icon: Users, color: "bg-primary", trend: "up" },
+          { label: "Pending Tasks", value: pendingRes.count || 0, change: "Need review", icon: Activity, color: "bg-amber-500", trend: "up" },
+        ])
+      } catch (error) {
+        console.error("Error fetching admin stats:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchAdminStats()
+  }, [supabase])
+
   return (
     <div className="space-y-10 pb-20">
       {/* Header */}
@@ -56,25 +82,29 @@ export default function AdminDashboard() {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi, i) => (
-          <Card key={i} className="border-none shadow-sm rounded-[32px] p-8 space-y-6 bg-white group hover:shadow-xl transition-all">
-            <div className={`w-14 h-14 rounded-2xl ${kpi.color} text-white flex items-center justify-center shadow-lg shadow-slate-200 transition-transform group-hover:scale-110`}>
-              <kpi.icon className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{kpi.label}</p>
-              <div className="flex items-baseline gap-3">
-                <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{kpi.value}</h3>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 ${
-                  kpi.trend === 'up' ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
-                }`}>
-                  {kpi.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                  {kpi.change}
-                </span>
+        {isLoading ? (
+          Array(4).fill(0).map((_, i) => <StatCardSkeleton key={i} />)
+        ) : (
+          stats.map((kpi, i) => (
+            <Card key={i} className="border-none shadow-sm rounded-[32px] p-8 space-y-6 bg-white group hover:shadow-xl transition-all">
+              <div className={`w-14 h-14 rounded-2xl ${kpi.color} text-white flex items-center justify-center shadow-lg shadow-slate-200 transition-transform group-hover:scale-110`}>
+                <kpi.icon className="w-6 h-6" />
               </div>
-            </div>
-          </Card>
-        ))}
+              <div className="space-y-1">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none">{kpi.label}</p>
+                <div className="flex items-baseline gap-3">
+                  <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">{kpi.value}</h3>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 ${
+                    kpi.trend === 'up' ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+                  }`}>
+                    {kpi.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {kpi.change}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">

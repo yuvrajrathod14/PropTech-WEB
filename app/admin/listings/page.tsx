@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { 
   Search, 
-  Filter, 
   Eye, 
   CheckCircle2, 
   XCircle, 
@@ -14,7 +13,15 @@ import {
   ArrowUpRight,
   Download,
   MoreHorizontal,
-  Loader2
+  LayoutGrid,
+  CreditCard,
+  Calendar,
+  Filter,
+  User,
+  Briefcase,
+  Users,
+  AlertCircle,
+  History
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,11 +33,12 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+import { cn, formatIndianPrice } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import { formatIndianPrice } from "@/lib/utils/formatPrice"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
+import { GridRowSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import { OptimizedImage } from "@/components/shared/optimized-image"
 
 export default function AdminListingsPage() {
   const supabase = createClient()
@@ -91,7 +99,6 @@ export default function AdminListingsPage() {
       
       if (error) throw error
 
-      // 2. Log Action
       if (user) {
         await (supabase.from("admin_audit_log") as any).insert({
           admin_id: user.id,
@@ -101,31 +108,17 @@ export default function AdminListingsPage() {
         })
       }
       
-      // Refresh local state
       setListings(prev => prev.map(l => l.id === id ? { ...l, status } : l))
     } catch (error) {
       console.error("Update status error:", error)
-      alert("Failed to update status")
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'live': return 'bg-emerald-50 text-emerald-600 border-emerald-100'
-      case 'pending': return 'bg-amber-50 text-amber-600 border-amber-100'
-      case 'rejected': return 'bg-red-50 text-red-600 border-red-100'
-      default: return 'bg-slate-50 text-slate-600'
-    }
-  }
 
-  const filteredListings = useMemo(() => {
-    return listings.filter(item => {
-      const matchesSearch = (item.property_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (item.profiles?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesTab = filter === "all" || item.status?.toLowerCase() === filter.toLowerCase()
-      return matchesSearch && matchesTab
-    })
-  }, [listings, searchQuery, filter])
+  const filteredListings = listings.filter(item => 
+    (item.property_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.profiles?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const pendingCount = useMemo(() => listings.filter(l => l.status === 'pending').length, [listings])
 
@@ -138,7 +131,7 @@ export default function AdminListingsPage() {
           <p className="text-slate-500 font-medium">Manage and audit all property listings across the platform.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-12 rounded-2xl border-slate-100 bg-white font-bold gap-2">
+          <Button variant="outline" className="h-12 rounded-2xl border-slate-100 bg-white font-black whitespace-nowrap text-[10px] uppercase tracking-widest gap-2">
             <Download className="w-4 h-4" /> Export CSV
           </Button>
           <Button className="h-12 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black px-6 shadow-xl shadow-slate-200 transition-all active:scale-95 italic">
@@ -154,7 +147,7 @@ export default function AdminListingsPage() {
                 <Input 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search property, owner, or ID..." 
+                    placeholder="Search property or owner..." 
                     className="pl-10 h-12 rounded-2xl bg-slate-50 border-none font-medium text-sm" 
                 />
             </div>
@@ -166,7 +159,7 @@ export default function AdminListingsPage() {
                         onClick={() => setFilter(t.toLowerCase())}
                         className={cn(
                             "rounded-xl px-4 h-10 font-black text-[10px] uppercase tracking-widest transition-all flex-1 md:flex-none",
-                            filter === t.toLowerCase() ? "bg-white text-primary shadow-sm" : "text-slate-500"
+                            filter === t.toLowerCase() ? "bg-white text-[#1A56DB] shadow-sm" : "text-slate-500"
                         )}
                     >
                         {t}
@@ -178,7 +171,7 @@ export default function AdminListingsPage() {
       {/* Listings Table Layout */}
       <div className="space-y-4">
           <div className="hidden lg:grid grid-cols-12 gap-4 px-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-              <div className="col-span-1">ID</div>
+              <div className="col-span-1">Preview</div>
               <div className="col-span-4">Property & Owner</div>
               <div className="col-span-2">Price & Type</div>
               <div className="col-span-2">Updated At</div>
@@ -187,43 +180,39 @@ export default function AdminListingsPage() {
           </div>
 
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[32px]">
-                <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                <p className="text-slate-500 font-medium italic">Scanning listings database...</p>
-            </div>
+             <div className="space-y-4">
+               {Array(5).fill(0).map((_, i) => <GridRowSkeleton key={i} />)}
+             </div>
           ) : filteredListings.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[32px] text-center space-y-4">
-                <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center">
-                    <Home className="w-10 h-10 text-slate-200" />
-                </div>
-                <div className="space-y-1">
-                    <h4 className="text-xl font-black text-slate-900 tracking-tight italic">No Listings Match</h4>
-                    <p className="text-slate-500 font-medium max-w-xs">Check your filters or search query to find properties.</p>
-                </div>
-            </div>
+            <EmptyState 
+              title="No listings match"
+              description="Your search criteria or active filters yielded no property results."
+              icon={LayoutGrid}
+              className="py-24 bg-white rounded-[32px]"
+            />
           ) : (
             filteredListings.map((listing) => (
                 <Card key={listing.id} className="border-none shadow-sm rounded-[24px] bg-white hover:shadow-xl transition-all group">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center p-6 lg:px-8">
-                        <div className="col-span-1 font-black text-slate-300 text-sm italic">#{listing.id.slice(0, 5)}</div>
+                        <div className="col-span-1">
+                            <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative group-hover:bg-[#1A56DB]/5 transition-colors border border-slate-50">
+                                <OptimizedImage 
+                                  src={listing.images?.[0] || ""} 
+                                  alt="" 
+                                  fill
+                                  className="object-cover transition-transform group-hover:scale-110" 
+                                />
+                            </div>
+                        </div>
                         
-                        <div className="col-span-4 flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center relative group-hover:bg-primary/5 transition-colors">
-                                {listing.images?.[0] ? (
-                                    <Image src={listing.images[0]} alt="" width={56} height={56} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                                ) : (
-                                    <Home className="w-6 h-6 text-slate-300 group-hover:text-primary transition-colors" />
-                                )}
-                            </div>
-                            <div className="min-w-0">
-                                <Link href={`/property/${listing.id}`}>
-                                  <h4 className="text-base font-black text-slate-900 truncate tracking-tight group-hover:text-primary transition-colors cursor-pointer flex items-center gap-2">
-                                      {listing.property_name || 'Untitled'}
-                                      <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  </h4>
-                                </Link>
-                                <p className="text-xs font-bold text-slate-400 italic">Owner: {listing.profiles?.full_name || 'Unknown'}</p>
-                            </div>
+                        <div className="col-span-4 min-w-0">
+                            <Link href={`/property/${listing.id}`}>
+                              <h4 className="text-base font-black text-slate-900 truncate tracking-tight group-hover:text-[#1A56DB] transition-colors cursor-pointer flex items-center gap-2">
+                                  {listing.property_name || 'Untitled'}
+                                  <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </h4>
+                            </Link>
+                            <p className="text-xs font-bold text-slate-400 italic">Owner: {listing.profiles?.full_name || 'Unknown'}</p>
                         </div>
   
                         <div className="col-span-2 space-y-1">
@@ -237,7 +226,7 @@ export default function AdminListingsPage() {
                         </div>
   
                         <div className="col-span-2">
-                            <Badge className={cn("rounded-full font-black text-[9px] uppercase tracking-widest px-3 border shadow-none", getStatusColor(listing.status))}>
+                            <Badge variant={listing.status?.toLowerCase() as any} className="rounded-full font-black text-[9px] uppercase tracking-widest px-3 border-none shadow-none">
                                 {listing.status || 'Draft'}
                             </Badge>
                         </div>
@@ -252,7 +241,7 @@ export default function AdminListingsPage() {
                                 <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 bg-white/80 backdrop-blur-md border-slate-100 shadow-2xl">
                                     <DropdownMenuItem asChild className="rounded-xl font-bold gap-3 px-3 py-2.5 cursor-pointer transition-colors focus:bg-slate-100">
                                         <Link href={`/property/${listing.id}`} className="flex items-center gap-3 w-full">
-                                            <Eye className="w-4 h-4 text-blue-500" /> View Full Listing
+                                            <Eye className="w-4 h-4 text-blue-500" /> View Listing
                                         </Link>
                                     </DropdownMenuItem>
                                     {listing.status?.toLowerCase() === 'pending' && (
@@ -276,7 +265,7 @@ export default function AdminListingsPage() {
                                         onSelect={() => router.push(`/admin/listings/${listing.id}/edit`)}
                                         className="rounded-xl font-bold gap-3 px-3 py-2.5 cursor-pointer transition-colors focus:bg-slate-100"
                                     >
-                                        <MapPin className="w-4 h-4 text-slate-400" /> Map Location
+                                        <MapPin className="w-4 h-4 text-slate-400" /> Edit Details
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>

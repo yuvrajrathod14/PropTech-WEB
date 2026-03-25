@@ -72,7 +72,7 @@ export function PropertyTypeExplorer() {
                   {type.icon}
                 </div>
                 <h3 className="font-bold text-slate-900 group-hover:text-primary transition-colors">{type.name}</h3>
-                <Badge variant="secondary" className="mt-3 bg-white text-slate-500 font-semibold border-slate-100">
+                <Badge variant="outline" className="mt-3 bg-white text-slate-500 font-semibold border-slate-100">
                   {type.count} listings
                 </Badge>
               </motion.div>

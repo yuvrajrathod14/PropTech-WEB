@@ -20,6 +20,7 @@ import {
   MessageSquare,
   BarChart3,
   List,
+  Calendar,
 } from "lucide-react"
 import { 
   DropdownMenu, 
@@ -49,13 +50,74 @@ export function Navbar() {
   const { user, loading } = useAuth()
   const supabase = createClient()
 
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifications, setNotifications] = useState<any[]>([])
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
     }
     window.addEventListener("scroll", handleScroll)
+
+    if (user) {
+      fetchNotifications()
+      
+      // Subscribe to real-time notifications
+      const channel = supabase
+        .channel(`notifications:${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            setNotifications((prev) => [payload.new, ...prev].slice(0, 10))
+            setUnreadCount((prev) => prev + 1)
+          }
+        )
+        .subscribe()
+
+      return () => {
+        window.removeEventListener("scroll", handleScroll)
+        supabase.removeChannel(channel)
+      }
+    }
+
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  }, [user])
+
+  const fetchNotifications = async () => {
+    if (!user) return
+    try {
+      const { data, count, error } = await (supabase.from("notifications") as any)
+        .select("*", { count: 'exact' })
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+      setNotifications(data || [])
+      
+      const { count: unread } = await (supabase.from("notifications") as any)
+        .select("*", { count: 'exact' })
+        .eq("user_id", user.id)
+        .eq("is_read", false)
+
+      setUnreadCount(unread || 0)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const markAsRead = async (id: string) => {
+    if (!user) return
+    await (supabase.from("notifications") as any).update({ is_read: true }).eq("id", id)
+    setUnreadCount((prev) => Math.max(0, prev - 1))
+    setNotifications((prev) => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -115,26 +177,53 @@ export function Navbar() {
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="relative rounded-xl hover:bg-slate-100">
                         <Bell className="w-5 h-5 text-slate-600" />
-                        <Badge className="absolute -top-1 -right-1 w-4 h-4 p-0 flex items-center justify-center bg-primary text-[10px] border-2 border-white">3</Badge>
+                        {unreadCount > 0 && (
+                          <Badge className="absolute -top-1 -right-1 min-w-[18px] h-[18px] p-0 flex items-center justify-center bg-primary text-[10px] border-2 border-white font-black">
+                            {unreadCount}
+                          </Badge>
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-80 p-2 rounded-2xl shadow-2xl border-slate-100">
-                      <DropdownMenuLabel className="font-bold text-slate-900 border-b border-slate-50 pb-2 mb-2">Notifications</DropdownMenuLabel>
-                      <div className="space-y-1">
-                         {[1, 2, 3].map((i) => (
-                           <DropdownMenuItem key={i} className="p-3 rounded-xl cursor-pointer hover:bg-slate-50 flex gap-3">
-                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
-                                <Bell className="w-4 h-4" />
-                              </div>
-                              <div className="flex flex-col gap-0.5">
-                                <p className="text-xs font-bold text-slate-900">New property enquiry recived</p>
-                                <p className="text-[10px] text-slate-400 font-medium">2 minutes ago</p>
-                              </div>
-                           </DropdownMenuItem>
-                         ))}
+                    <DropdownMenuContent align="end" className="w-80 p-2 rounded-2xl shadow-2xl border-slate-100 bg-white">
+                      <DropdownMenuLabel className="font-black text-slate-900 border-b border-slate-50 pb-2 mb-2 italic">Notifications</DropdownMenuLabel>
+                      <div className="space-y-1 max-h-[400px] overflow-y-auto">
+                         {notifications.length === 0 ? (
+                           <div className="p-8 text-center">
+                              <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">No notifications yet</p>
+                           </div>
+                         ) : (
+                           notifications.map((n) => (
+                             <DropdownMenuItem 
+                               key={n.id} 
+                               className={cn(
+                                 "p-3 rounded-xl cursor-pointer flex gap-3 transition-colors",
+                                 !n.is_read ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-slate-50"
+                               )}
+                               onClick={() => markAsRead(n.id)}
+                             >
+                                <div className={cn(
+                                  "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                                  !n.is_read ? "bg-primary text-white" : "bg-slate-100 text-slate-400"
+                                )}>
+                                  <Bell className="w-4 h-4" />
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <p className={cn("text-xs font-bold", !n.is_read ? "text-slate-900" : "text-slate-500")}>
+                                    {n.title}
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 font-medium">
+                                    {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </div>
+                             </DropdownMenuItem>
+                           ))
+                         )}
                       </div>
                       <DropdownMenuSeparator className="my-2 bg-slate-50" />
-                      <DropdownMenuItem className="w-full justify-center text-xs font-bold text-primary cursor-pointer hover:bg-slate-50 rounded-xl py-2">View All Notifications</DropdownMenuItem>
+                      <DropdownMenuItem className="w-full justify-center text-[10px] font-black uppercase tracking-widest text-primary cursor-pointer hover:bg-slate-50 rounded-xl py-2">
+                        View All
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
 
@@ -181,6 +270,12 @@ export function Navbar() {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem className="p-0">
+                              <Link href="/owner/visits" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <Calendar className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">My Visits</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-0">
                               <Link href="/owner/analytics" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
                                 <BarChart3 className="w-4 h-4 text-slate-500" />
                                 <span className="font-bold text-slate-700">Analytics</span>
@@ -201,12 +296,18 @@ export function Navbar() {
                                 <span className="font-bold text-slate-700">Saved Properties</span>
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="p-0">
-                              <Link href="/buyer/bookings" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
-                                <ShoppingBag className="w-4 h-4 text-slate-500" />
-                                <span className="font-bold text-slate-700">My Bookings</span>
-                              </Link>
-                            </DropdownMenuItem>
+                             <DropdownMenuItem className="p-0">
+                               <Link href="/buyer/visits" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                 <Calendar className="w-4 h-4 text-slate-500" />
+                                 <span className="font-bold text-slate-700">My Visits</span>
+                               </Link>
+                             </DropdownMenuItem>
+                             <DropdownMenuItem className="p-0">
+                               <Link href="/buyer/bookings" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                 <ShoppingBag className="w-4 h-4 text-slate-500" />
+                                 <span className="font-bold text-slate-700">My Bookings</span>
+                               </Link>
+                             </DropdownMenuItem>
                             <DropdownMenuItem className="p-0">
                               <Link href="/buyer/chat" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
                                 <MessageSquare className="w-4 h-4 text-slate-500" />

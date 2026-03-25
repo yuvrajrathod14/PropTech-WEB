@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { 
   MapPin, 
   BedDouble, 
@@ -12,9 +11,7 @@ import {
   Share2, 
   CheckCircle2, 
   Calendar, 
-  Clock, 
   ArrowRight, 
-  Phone, 
   MessageSquare,
   ShieldCheck,
   Star,
@@ -23,12 +20,6 @@ import {
   Info,
   ParkingCircle,
   Zap,
-  Waves,
-  Shield,
-  Dumbbell,
-  Trees,
-  Users,
-  FileWarning,
   Loader2,
   LayoutGrid
 } from "lucide-react"
@@ -49,9 +40,40 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ImageCarousel } from "@/components/shared/image-carousel"
-import { formatIndianPrice } from "@/lib/utils/formatPrice"
-import { cn } from "@/lib/utils"
+import { formatIndianPrice, cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
+import { createNotification } from "@/lib/utils/notifications"
+import { Skeleton } from "@/components/ui/skeleton"
+
+// Specialized Detail Skeleton
+function PropertyDetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-50 pt-24 pb-20">
+      <div className="container mx-auto px-4">
+        <div className="h-6 w-64 bg-slate-200 animate-pulse rounded-full mb-8" />
+        <div className="flex flex-col lg:flex-row gap-10">
+          <div className="flex-1 space-y-10">
+            <Skeleton className="aspect-[16/9] md:h-[480px] rounded-[40px]" />
+            <div className="bg-white rounded-[40px] p-8 space-y-6">
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-2/3" />
+                <Skeleton className="h-6 w-1/2" />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4">
+                {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-3xl" />)}
+              </div>
+            </div>
+          </div>
+          <div className="w-full lg:w-[400px] space-y-8">
+            <Skeleton className="h-64 rounded-[40px]" />
+            <Skeleton className="h-56 rounded-[40px]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function PropertyDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
@@ -62,6 +84,8 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
   const [enquiryMessage, setEnquiryMessage] = useState("")
   const [user, setUser] = useState<any>(null)
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const [isSchedulingVisit, setIsSchedulingVisit] = useState(false)
+  const [visitDate, setVisitDate] = useState("")
 
   // EMI Calculator State
   const [loanAmount, setLoanAmount] = useState(0)
@@ -144,20 +168,83 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
 
     setIsSubmittingEnquiry(true)
     try {
-      const { error } = await (supabase.from("enquiries") as any).insert({
+      const { error: enquiryError } = await (supabase.from("enquiries") as any).insert({
         property_id: params.id,
         sender_id: user.id,
         message: enquiryMessage || "I'm interested in this property. Please contact me."
       })
 
-      if (error) throw error
-      alert("Enquiry sent successfully!")
+      if (enquiryError) throw enquiryError
+
+      const { data: existingConv } = await (supabase.from("conversations") as any)
+        .select("id")
+        .eq("buyer_id", user.id)
+        .eq("property_id", params.id)
+        .maybeSingle()
+
+      if (!existingConv) {
+        await (supabase.from("conversations") as any).insert({
+          buyer_id: user.id,
+          owner_id: property.owner_id,
+          property_id: params.id,
+          last_message: enquiryMessage || "Enquiry Sent"
+        })
+      }
+
+      await createNotification({
+        userId: property.owner_id,
+        title: "New Property Enquiry",
+        message: `${user.user_metadata?.full_name || 'A buyer'} is interested in ${property.property_name}`,
+        type: 'enquiry',
+        link: `/owner/chat`
+      })
+
+      alert("Enquiry sent! You can now chat with the owner in your dashboard.")
       setEnquiryMessage("")
     } catch (error) {
       console.error("Enquiry error:", error)
       alert("Failed to send enquiry")
     } finally {
       setIsSubmittingEnquiry(false)
+    }
+  }
+
+  const handleScheduleVisit = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/property/${params.id}`)
+      return
+    }
+
+    if (!visitDate) {
+      alert("Please select a date")
+      return
+    }
+
+    setIsSchedulingVisit(true)
+    try {
+      const { error } = await (supabase.from("site_visits") as any).insert({
+        property_id: params.id,
+        user_id: user.id,
+        preferred_date: visitDate,
+        status: 'pending'
+      })
+
+      if (error) throw error
+
+      await createNotification({
+        userId: property.owner_id,
+        title: "Site Visit Requested",
+        message: `${user.user_metadata?.full_name || 'A buyer'} requested a visit for ${property.property_name} on ${visitDate}`,
+        type: 'visit',
+        link: `/owner/visits`
+      })
+
+      alert("Site visit requested! The owner will confirm soon.")
+    } catch (error) {
+      console.error("Site visit error:", error)
+      alert("Failed to request site visit")
+    } finally {
+      setIsSchedulingVisit(false)
     }
   }
 
@@ -172,21 +259,14 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
 
   const totalPayable = emi * tenure * 12
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-        <p className="text-slate-500 font-black italic tracking-widest uppercase text-xs">Loading Property Details...</p>
-      </div>
-    )
-  }
+  if (isLoading) return <PropertyDetailSkeleton />
 
   if (!property) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
         <h1 className="text-4xl font-black text-slate-900 mb-4 italic">Property Not Found</h1>
         <Link href="/search">
-          <Button className="rounded-2xl h-14 px-8 font-black text-white bg-primary">Browse properties</Button>
+          <Button className="rounded-2xl h-14 px-8 font-black text-white bg-[#1A56DB]">Browse properties</Button>
         </Link>
       </div>
     )
@@ -198,9 +278,9 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
         
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">
-          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+          <Link href="/" className="hover:text-[#1A56DB] transition-colors">Home</Link>
           <ChevronRight className="w-3 h-3" />
-          <Link href="/search" className="hover:text-primary transition-colors">{property.city || 'Ahmedabad'}</Link>
+          <Link href="/search?city={property.city}" className="hover:text-[#1A56DB] transition-colors">{property.city || 'Ahmedabad'}</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-slate-900 line-clamp-1">{property.property_name}</span>
         </nav>
@@ -226,7 +306,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
               </div>
 
               <div className="absolute top-6 right-6 flex gap-3">
-                <Button size="icon" className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900 transition-all hover:scale-110">
+                <Button size="icon" variant="outline" className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900 transition-all hover:scale-110 border-none">
                   <Share2 className="w-5 h-5" />
                 </Button>
                 <Button 
@@ -246,18 +326,18 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
             <section className="bg-white rounded-[40px] p-8 md:p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                 <div className="space-y-4">
-                  <p className="text-xs font-black text-primary uppercase tracking-[0.2em]">{property.category} • {property.city}</p>
+                  <p className="text-xs font-black text-[#1A56DB] uppercase tracking-[0.2em]">{property.category} • {property.city}</p>
                   <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight max-w-2xl">
                     {property.property_name}
                   </h1>
                   <div className="flex items-center text-slate-500 font-bold group">
-                    <MapPin className="w-5 h-5 mr-2 text-primary group-hover:animate-bounce" />
+                    <MapPin className="w-5 h-5 mr-2 text-[#1A56DB] group-hover:animate-bounce" />
                     <span className="text-lg">{property.address || property.locality}</span>
                   </div>
                 </div>
                 <div className="text-left md:text-right space-y-2">
                   <div className="flex items-center md:justify-end gap-3">
-                    <p className="text-4xl font-black text-primary tracking-tighter">
+                    <p className="text-4xl font-black text-[#1A56DB] tracking-tighter">
                       {formatIndianPrice(property.price)}
                     </p>
                     <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold text-[10px] px-3 py-1 uppercase tracking-wider">
@@ -279,7 +359,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                   { icon: Calendar, label: "Status", val: "Ready" },
                 ].map((item, i) => (
                   <div key={i} className="bg-slate-50/80 rounded-3xl p-4 border border-slate-100 group hover:bg-white hover:shadow-xl transition-all duration-300">
-                    <item.icon className="w-5 h-5 text-slate-300 mb-3 group-hover:text-primary transition-colors" />
+                    <item.icon className="w-5 h-5 text-slate-300 mb-3 group-hover:text-[#1A56DB] transition-colors" />
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
                     <p className="text-sm font-black text-slate-800">{item.val}</p>
                   </div>
@@ -289,19 +369,19 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
 
             {/* Tabs Section */}
             <Tabs defaultValue="overview" className="space-y-8">
-              <TabsList className="w-full justify-start bg-transparent h-auto p-0 border-b border-slate-200 rounded-none gap-8 overflow-x-auto scrollbar-hide">
+              <TabsList className="w-full justify-start bg-transparent h-auto p-0 border-b border-slate-200 rounded-none gap-8 overflow-x-auto no-scrollbar">
                 {["Overview", "Amenities", "Location"].map((t) => (
                   <TabsTrigger 
                     key={t}
                     value={t.toLowerCase()}
-                    className="bg-transparent border-none text-slate-400 font-black text-sm uppercase tracking-widest px-0 py-4 h-auto data-[state=active]:text-primary data-[state=active]:border-b-4 data-[state=active]:border-primary transition-all rounded-none shadow-none"
+                    className="bg-transparent border-none text-slate-400 font-black text-sm uppercase tracking-widest px-0 py-4 h-auto data-[state=active]:text-[#1A56DB] data-[state=active]:border-b-4 data-[state=active]:border-[#1A56DB] transition-all rounded-none shadow-none"
                   >
                     {t}
                   </TabsTrigger>
                 ))}
               </TabsList>
 
-              <TabsContent value="overview" className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <TabsContent value="overview" className="space-y-10">
                 <div className="grid md:grid-cols-2 gap-10">
                   <div className="space-y-6">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Property Description</h3>
@@ -332,13 +412,13 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                 </div>
               </TabsContent>
 
-              <TabsContent value="amenities" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-white rounded-[40px] p-8 md:p-10 border border-slate-100 shadow-xl shadow-slate-200/50">
+              <TabsContent value="amenities">
+                 <div className="bg-white rounded-[40px] p-8 md:p-10 border border-slate-100 shadow-xl shadow-slate-200/50">
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-8">Modern Amenities</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     {property.amenities?.map((item: string, i: number) => (
                       <div key={i} className="flex items-center gap-4 transition-all group">
-                        <div className="w-12 h-12 rounded-2xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white flex items-center justify-center transition-all">
+                        <div className="w-12 h-12 rounded-2xl bg-[#1A56DB]/5 text-[#1A56DB] group-hover:bg-[#1A56DB] group-hover:text-white flex items-center justify-center transition-all">
                           <Zap className="w-6 h-6" />
                         </div>
                         <span className="text-sm font-black uppercase tracking-wider text-slate-700">{item}</span>
@@ -348,10 +428,10 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                 </div>
               </TabsContent>
 
-              <TabsContent value="location" className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="relative rounded-[40px] overflow-hidden h-[400px] border-4 border-white shadow-2xl">
+              <TabsContent value="location">
+                 <div className="relative rounded-[40px] overflow-hidden h-[400px] border-4 border-white shadow-2xl">
                    <div className="bg-slate-100 w-full h-full flex flex-col items-center justify-center space-y-2">
-                        <MapPin className="w-10 h-10 text-primary animate-bounce" />
+                        <MapPin className="w-10 h-10 text-[#1A56DB] animate-bounce" />
                         <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Location Data Restricted</p>
                         <p className="text-slate-900 font-bold text-sm text-center px-4">{property.address || property.locality}</p>
                    </div>
@@ -360,16 +440,12 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
             </Tabs>
           </div>
 
-          {/* Right Sidebar */}
           <aside className="w-full lg:w-[400px] shrink-0 space-y-8">
-            
-            {/* Owner Card */}
             <div className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16" />
               <div className="flex items-center gap-5 mb-8">
                 <Avatar className="w-16 h-16 border-4 border-slate-50 shadow-xl">
                   <AvatarImage src={property.owner?.avatar_url} />
-                  <AvatarFallback className="bg-primary text-white font-black">
+                  <AvatarFallback className="bg-[#1A56DB] text-white font-black">
                     {property.owner?.full_name?.slice(0, 2).toUpperCase() || 'OW'}
                   </AvatarFallback>
                 </Avatar>
@@ -385,12 +461,10 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
               <div className="space-y-4">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <button className={cn(
-                      "w-full h-14 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl text-lg shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] flex items-center justify-center gap-3"
-                    )}>
+                    <Button variant="default" className="w-full h-14 text-lg rounded-2xl font-black shadow-xl shadow-[#1A56DB]/20 gap-3">
                       <MessageSquare className="w-5 h-5" />
                       Send Enquiry
-                    </button>
+                    </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md rounded-[40px] border-none shadow-2xl bg-white p-8">
                     <DialogHeader>
@@ -404,15 +478,15 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                             value={enquiryMessage}
                             onChange={(e) => setEnquiryMessage(e.target.value)}
                             placeholder="I'm interested in this property..." 
-                            className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-sm focus-visible:ring-primary/20" 
+                            className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-sm" 
                         />
                       </div>
                       <Button 
                         onClick={handleSendEnquiry}
-                        disabled={isSubmittingEnquiry}
-                        className="w-full h-14 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 text-white transition-all shadow-xl shadow-primary/10"
+                        isLoading={isSubmittingEnquiry}
+                        className="w-full h-14 rounded-2xl font-black text-lg bg-[#1A56DB]"
                       >
-                        {isSubmittingEnquiry ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send Enquiry Now"}
+                        Send Enquiry Now
                       </Button>
                     </div>
                   </DialogContent>
@@ -420,63 +494,68 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <button className={cn(
-                      "w-full h-14 border-2 border-slate-100 hover:border-primary hover:bg-white text-slate-900 font-black rounded-2xl text-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-3"
-                    )}>
-                      <Calendar className="w-5 h-5 text-primary" />
+                    <Button variant="outline" className="w-full h-14 text-lg rounded-2xl font-black border-2 border-slate-100 hover:border-[#1A56DB] gap-3">
+                      <Calendar className="w-5 h-5 text-[#1A56DB]" />
                       Schedule Visit
-                    </button>
+                    </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md rounded-[40px] border-none shadow-2xl bg-white p-8">
                     <DialogHeader>
                       <DialogTitle className="text-3xl font-black text-slate-900 italic">Book a Visit</DialogTitle>
                       <DialogDescription className="font-bold text-slate-500 italic">Pick a preferred date and time for site inspection.</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-6 pt-6 text-center italic text-slate-400 font-bold">
-                        Feature coming soon. Please send an enquiry.
+                    <div className="space-y-6 pt-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Select Date</Label>
+                        <Input 
+                            type="date"
+                            min={new Date().toISOString().split('T')[0]}
+                            value={visitDate}
+                            onChange={(e) => setVisitDate(e.target.value)}
+                            className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-sm" 
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleScheduleVisit}
+                        isLoading={isSchedulingVisit}
+                        className="w-full h-14 rounded-2xl font-black text-lg bg-[#1A56DB]"
+                      >
+                        Request Visit Now
+                      </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
               </div>
             </div>
 
-            {/* Book Now Card */}
             <div className="bg-emerald-600 rounded-[40px] p-8 text-white shadow-2xl shadow-emerald-600/20 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
               <div className="relative z-10 space-y-6">
                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                       <CheckCircle2 className="w-6 h-6 text-white" />
-                    </div>
+                    <CheckCircle2 className="w-6 h-6 text-white" />
                     <h4 className="text-xl font-black tracking-tight italic">Ready to Book?</h4>
                  </div>
                  <div className="space-y-2">
                     <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">Token Amount</p>
                     <p className="text-3xl font-black tracking-tighter">₹51,000</p>
-                    <p className="text-[10px] font-bold text-white/60 italic">Includes ₹1,000 platform fee (Refunadable*)</p>
                  </div>
                  <Link href={`/buyer/book/${property.id}`} className="block w-full">
-                    <Button className="w-full h-14 bg-white text-emerald-600 hover:bg-emerald-50 font-black rounded-2xl text-lg shadow-xl shadow-white/10 transition-all hover:scale-[1.02]">
+                    <Button className="w-full h-14 bg-white text-emerald-600 hover:bg-emerald-50 font-black rounded-2xl text-lg transition-all">
                         Pay Token & Book
                     </Button>
                  </Link>
               </div>
             </div>
 
-            {/* EMI Calculator */}
             <div className="bg-slate-900 rounded-[40px] p-8 text-white shadow-2xl shadow-slate-900/40 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8">
-                <Calculator className="w-12 h-12 text-white/10" />
-              </div>
-              <h4 className="text-xl font-black tracking-tight mb-8 flex items-center gap-3 italic">
-                <Calculator className="w-6 h-6 text-primary" />
+               <h4 className="text-xl font-black tracking-tight mb-8 flex items-center gap-3 italic">
+                <Calculator className="w-6 h-6 text-[#1A56DB]" />
                 EMI Calculator
               </h4>
               <div className="space-y-8 mb-10">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                     <span className="text-slate-400 tracking-[0.2em]">Loan Amount</span>
-                    <span className="text-primary tracking-tighter text-sm">{formatIndianPrice(loanAmount)}</span>
+                    <span className="text-[#1A56DB] tracking-tighter text-sm">{formatIndianPrice(loanAmount)}</span>
                   </div>
                   <Slider 
                     value={[loanAmount]} 
@@ -489,7 +568,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                     <span className="text-slate-400 tracking-[0.2em]">Interest Rate</span>
-                    <span className="text-primary text-sm font-black">{interestRate}%</span>
+                    <span className="text-[#1A56DB] text-sm font-black">{interestRate}%</span>
                   </div>
                   <Slider 
                     value={[interestRate]} 
@@ -508,7 +587,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                 </div>
                 <Separator className="bg-white/5" />
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                  <div className="text-center">
+                   <div className="text-center w-full">
                     <p className="text-slate-400 mb-1">Total Payable</p>
                     <p className="text-white tracking-tighter">{formatIndianPrice(totalPayable)}</p>
                   </div>

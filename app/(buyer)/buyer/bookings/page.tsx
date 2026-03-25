@@ -1,6 +1,7 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowRight, 
   Download, 
@@ -9,116 +10,170 @@ import {
   XCircle,
   RotateCcw,
   MapPin,
-  MessageSquare
+  MessageSquare,
+  History,
+  AlertCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatIndianPrice } from "@/lib/utils/formatPrice"
-import Image from "next/image"
+import { formatIndianPrice, cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { TableRowSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import { OptimizedImage } from "@/components/shared/optimized-image"
 import Link from "next/link"
-
-const bookings = [
-  {
-    id: "B-88392",
-    propertyTitle: "Spacious 3BHK Apartment in Satellite",
-    locality: "Ahmedabad, Gujarat",
-    coverImage: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=800",
-    date: "12 Oct 2024",
-    type: "Token Deposit",
-    amount: 50000,
-    status: "paid",
-    paymentId: "pay_N8392XJD92",
-    isRefundable: true
-  },
-  {
-    id: "B-88120",
-    propertyTitle: "Modern Villa with Private Pool",
-    locality: "Shela, Ahmedabad",
-    coverImage: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800",
-    date: "05 Oct 2024",
-    type: "Rent Advance",
-    amount: 125000,
-    status: "pending",
-    paymentId: "pay_pending_9329",
-    isRefundable: false
-  },
-  {
-    id: "B-87990",
-    propertyTitle: "2BHK Flat near CEPT University",
-    locality: "Navrangpura, Ahmedabad",
-    coverImage: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&q=80&w=800",
-    date: "20 Sep 2024",
-    type: "Token Deposit",
-    amount: 25000,
-    status: "cancelled",
-    paymentId: "pay_ref_O8291XD",
-    isRefundable: false
-  }
-]
 
 const statusConfig = {
   paid: { label: "Paid", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: CheckCircle2 },
   pending: { label: "Pending", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
   cancelled: { label: "Refunded", color: "bg-slate-50 text-slate-500 border-slate-100", icon: RotateCcw },
   failed: { label: "Failed", color: "bg-red-50 text-red-600 border-red-100", icon: XCircle },
+  confirmed: { label: "Confirmed", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: CheckCircle2 },
+  requested: { label: "Requested", color: "bg-blue-50 text-blue-600 border-blue-100", icon: Clock },
 }
 
 export default function BookingsPage() {
+  const supabase = createClient()
+  const [activeTab, setActiveTab] = useState("all")
+  const [data, setData] = useState<{ bookings: any[], visits: any[] }>({ bookings: [], visits: [] })
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const [bookingsRes, visitsRes] = await Promise.all([
+        (supabase.from("bookings") as any).select("*, property:property_id(*)").eq("user_id", user.id).order("created_at", { ascending: false }),
+        (supabase.from("site_visits") as any).select("*, property:property_id(*)").eq("user_id", user.id).order("created_at", { ascending: false })
+      ])
+
+      setData({
+        bookings: bookingsRes.data || [],
+        visits: visitsRes.data || []
+      })
+    } catch (error) {
+      console.error("Error fetching data:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [supabase])
+
+  const isEmpty = data.bookings.length === 0 && data.visits.length === 0
+
   return (
     <div className="space-y-8">
       <div className="space-y-1">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Bookings</h1>
-        <p className="text-slate-500 font-medium">Manage your token deposits and rental payments</p>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight italic">My Bookings & Visits</h1>
+        <p className="text-slate-500 font-medium">Manage your token deposits, rental payments, and property visits.</p>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-8">
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-8">
         <TabsList className="bg-white p-1.5 rounded-2xl h-14 border border-slate-100 shadow-sm w-full md:w-auto">
-          <TabsTrigger value="all" className="rounded-xl px-8 font-black text-sm data-[state=active]:bg-primary data-[state=active]:text-white transition-all">All</TabsTrigger>
-          <TabsTrigger value="active" className="rounded-xl px-8 font-black text-sm data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Active</TabsTrigger>
-          <TabsTrigger value="completed" className="rounded-xl px-8 font-black text-sm data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Completed</TabsTrigger>
-          <TabsTrigger value="cancelled" className="rounded-xl px-8 font-black text-sm data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Cancelled</TabsTrigger>
+          <TabsTrigger value="all" className="rounded-xl px-8 font-black text-sm data-[state=active]:bg-[#1A56DB] data-[state=active]:text-white transition-all">All History</TabsTrigger>
+          <TabsTrigger value="visits" className="rounded-xl px-8 font-black text-sm data-[state=active]:bg-[#1A56DB] data-[state=active]:text-white transition-all">Site Visits</TabsTrigger>
+          <TabsTrigger value="payments" className="rounded-xl px-8 font-black text-sm data-[state=active]:bg-[#1A56DB] data-[state=active]:text-white transition-all">Payments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-6">
-          {bookings.map((booking) => (
-            <BookingCard key={booking.id} booking={booking} />
-          ))}
+          {isLoading ? (
+             <div className="space-y-4">
+               {Array(3).fill(0).map((_, i) => <TableRowSkeleton key={i} />)}
+             </div>
+          ) : isEmpty ? (
+            <EmptyState 
+              title="No activities yet"
+              description="You haven't booked any visits or made any payments yet. Start exploring to find your dream property."
+              icon={History}
+              action={{
+                label: "Explore Properties",
+                onClick: () => window.location.href = "/search",
+                icon: ArrowRight
+              }}
+              className="py-24"
+            />
+          ) : (
+            <>
+              {activeTab === 'all' && (
+                <div className="space-y-6">
+                  {data.bookings.map((booking) => (
+                    <BookingCard key={booking.id} booking={booking} type="payment" />
+                  ))}
+                  {data.visits.map((visit) => (
+                    <BookingCard key={visit.id} booking={visit} type="visit" />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </TabsContent>
-        {/* Other tabs would filter the bookings array */}
+
+        <TabsContent value="visits" className="space-y-6">
+           {isLoading ? (
+             <div className="space-y-4">
+               {Array(3).fill(0).map((_, i) => <TableRowSkeleton key={i} />)}
+             </div>
+          ) : data.visits.length === 0 ? (
+            <EmptyState 
+              title="No visits scheduled"
+              description="Request a site visit from any property detail page to see it in person."
+              icon={MapPin}
+              className="py-24"
+            />
+          ) : (
+            data.visits.map((visit) => (
+              <BookingCard key={visit.id} booking={visit} type="visit" />
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="payments" className="space-y-6">
+           {isLoading ? (
+             <div className="space-y-4">
+               {Array(3).fill(0).map((_, i) => <TableRowSkeleton key={i} />)}
+             </div>
+          ) : data.bookings.length === 0 ? (
+            <EmptyState 
+              title="No payments made"
+              description="Pay token amounts securely via PropTech Shield to book your properties."
+              icon={CreditCard}
+              className="py-24"
+            />
+          ) : (
+            data.bookings.map((booking) => (
+              <BookingCard key={booking.id} booking={booking} type="payment" />
+            ))
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   )
 }
 
-interface Booking {
-  id: string
-  propertyTitle: string
-  locality: string
-  coverImage: string
-  date: string
-  type: string
-  amount: number
-  status: string
-  paymentId: string
-  isRefundable: boolean
-}
-
-function BookingCard({ booking }: { booking: Booking }) {
-  const status = statusConfig[booking.status as keyof typeof statusConfig]
+function BookingCard({ booking, type }: { booking: any, type: 'payment' | 'visit' }) {
+  const status = statusConfig[booking.status as keyof typeof statusConfig] || statusConfig.pending
+  const property = booking.property
   
+  if (!property) return null
+
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }}
       whileInView={{ opacity: 1, scale: 1 }}
-      className="bg-white p-6 rounded-[32px] border border-slate-100 hover:border-primary/20 transition-all hover:shadow-xl hover:shadow-slate-200/50 group"
+      className="bg-white p-6 rounded-[32px] border border-slate-100 hover:border-[#1A56DB]/20 transition-all hover:shadow-xl hover:shadow-slate-200/50 group"
     >
       <div className="flex flex-col md:flex-row gap-6">
         {/* Image */}
-        <div className="w-full md:w-32 h-44 md:h-32 rounded-2xl overflow-hidden relative shrink-0">
-          <Image 
-            src={booking.coverImage} 
-            alt={booking.propertyTitle}
+        <div className="w-full md:w-32 h-44 md:h-32 rounded-2xl overflow-hidden relative shrink-0 border border-slate-100">
+          <OptimizedImage 
+            src={property.images?.[0] || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=800"} 
+            alt={property.property_name}
             fill
             className="object-cover group-hover:scale-110 transition-transform duration-500"
           />
@@ -128,55 +183,67 @@ function BookingCard({ booking }: { booking: Booking }) {
         <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
           <div className="space-y-1">
             <div className="flex items-start justify-between gap-4">
-              <Link href={`/property/${booking.id}`} className="text-xl font-black text-slate-900 leading-tight hover:text-primary transition-colors line-clamp-1">
-                {booking.propertyTitle}
+              <Link href={`/property/${property.id}`} className="text-xl font-black text-slate-900 leading-tight hover:text-[#1A56DB] transition-colors line-clamp-1">
+                {property.property_name}
               </Link>
-              <Badge variant="outline" className={`px-4 py-1.5 rounded-xl border-2 shrink-0 ${status.color} border-transparent`}>
+              <Badge variant="outline" className={cn("px-4 py-1.5 rounded-xl border-2 shrink-0 border-transparent", status.color)}>
                 <status.icon className="w-3.5 h-3.5 mr-2" />
                 <span className="font-black text-[10px] uppercase tracking-widest">{status.label}</span>
               </Badge>
             </div>
             <p className="text-sm font-bold text-slate-400 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5" />
-              {booking.locality}
+              {property.address || property.locality}
             </p>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-slate-50 mt-4">
             <div className="space-y-1">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Date</span>
-              <p className="text-sm font-black text-slate-700">{booking.date}</p>
+              <p className="text-sm font-black text-slate-700">
+                {new Date(booking.preferred_date || booking.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </p>
             </div>
             <div className="space-y-1">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Type</span>
-              <p className="text-sm font-black text-primary">{booking.type}</p>
+              <p className="text-sm font-black text-[#1A56DB] uppercase">
+                {type === 'payment' ? (booking.amount > 100000 ? "Advance" : "Token") : "Site Visit"}
+              </p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Amount Paid</span>
-              <p className="text-lg font-black text-slate-900">{formatIndianPrice(booking.amount)}</p>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                {type === 'payment' ? "Amount Paid" : "Scheduled Time"}
+              </span>
+              <p className="text-lg font-black text-slate-900">
+                {type === 'payment' ? formatIndianPrice(booking.amount) : "10:00 AM"}
+              </p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Razorpay ID</span>
-              <p className="text-xs font-bold text-slate-400 font-mono tracking-tighter truncate">{booking.paymentId}</p>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                {type === 'payment' ? "Transaction ID" : "Visit Status"}
+              </span>
+              <p className="text-xs font-bold text-slate-400 font-mono tracking-tighter truncate italic uppercase">
+                {booking.payment_id || booking.status || "N/A"}
+              </p>
             </div>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex flex-col md:flex-row lg:flex-col gap-3 md:justify-center shrink-0 w-full lg:w-48">
-          <Link href={`/buyer/bookings/${booking.id}`} className="flex-1 lg:flex-none">
-            <Button className="w-full rounded-2xl h-12 px-6 font-black gap-2 bg-slate-900 shadow-xl shadow-slate-200">
-              View Details <ArrowRight className="w-4 h-4" />
+          <Link href={`/property/${property.id}`} className="flex-1 lg:flex-none">
+            <Button className="w-full rounded-2xl h-12 px-6 font-black gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200">
+              View Property <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
           <div className="flex gap-2">
-            <Link href={`/buyer/chat?booking=${booking.id}`} className="flex-1">
-              <Button variant="outline" className="w-full rounded-2xl h-12 border-slate-100 hover:bg-slate-50 gap-2 font-bold">
-                <MessageSquare className="w-4 h-4 text-primary" />
+            <Link href={`/buyer/chat?property=${property.id}`} className="flex-1">
+              <Button variant="outline" className="w-full rounded-2xl h-12 border-slate-100 hover:bg-slate-50 gap-2 font-bold hover:border-[#1A56DB]/20">
+                <MessageSquare className="w-4 h-4 text-[#1A56DB]" />
                 Chat
               </Button>
             </Link>
-            <Button variant="outline" className="rounded-2xl h-12 w-12 p-0 border-slate-100 hover:bg-slate-50 group-hover:border-primary/20">
+            <Button variant="outline" className="rounded-2xl h-12 w-12 p-0 border-slate-100 hover:bg-slate-50 group-hover:border-[#1A56DB]/20">
               <Download className="w-4 h-4 text-slate-400" />
             </Button>
           </div>

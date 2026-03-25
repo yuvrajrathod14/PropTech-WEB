@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, Maximize2, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { OptimizedImage } from "@/components/shared/optimized-image"
 import { cn } from "@/lib/utils"
 
 interface ImageCarouselProps {
@@ -75,7 +75,7 @@ export function ImageCarousel({ images, className, aspectRatio = "video" }: Imag
             }}
             className="absolute inset-0"
           >
-            <Image
+            <OptimizedImage
               src={images[currentIndex]}
               alt={`Property image ${currentIndex + 1}`}
               fill
@@ -116,7 +116,7 @@ export function ImageCarousel({ images, className, aspectRatio = "video" }: Imag
             variant="secondary"
             size="icon"
             onClick={() => paginate(-1)}
-            className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900"
+            className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900 border-none"
           >
             <ChevronLeft className="w-6 h-6" />
           </Button>
@@ -124,7 +124,7 @@ export function ImageCarousel({ images, className, aspectRatio = "video" }: Imag
             variant="secondary"
             size="icon"
             onClick={() => paginate(1)}
-            className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900"
+            className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900 border-none"
           >
             <ChevronRight className="w-6 h-6" />
           </Button>
@@ -142,10 +142,10 @@ export function ImageCarousel({ images, className, aspectRatio = "video" }: Imag
             }}
             className={cn(
               "relative flex-shrink-0 w-24 aspect-video rounded-xl overflow-hidden border-2 transition-all",
-              index === currentIndex ? "border-primary scale-105 shadow-lg" : "border-transparent opacity-60 hover:opacity-100"
+              index === currentIndex ? "border-[#1A56DB] scale-105 shadow-lg" : "border-transparent opacity-60 hover:opacity-100"
             )}
           >
-            <Image src={img} alt="thumbnail" fill className="object-cover" />
+            <OptimizedImage src={img} alt="thumbnail" fill className="object-cover" />
             {index === images.length - 1 && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <Play className="w-6 h-6 text-white fill-white" />

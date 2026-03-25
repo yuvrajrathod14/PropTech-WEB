@@ -15,7 +15,8 @@ import {
   Home,
   Zap,
   LayoutGrid,
-  Filter
+  Filter,
+  RefreshCcw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,13 +46,14 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-// Removed unused formatIndianPrice import
-import { mockProperties } from "@/lib/mock-data"
 import { PropertyCard } from "@/components/shared/property-card"
-import { cn } from "@/lib/utils"
+import { cn, formatIndianPrice } from "@/lib/utils"
+import { PropertyCardSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ErrorState } from "@/components/ui/error-state"
 
-// Helper to format Indian currency for sliders
-const formatCurrency = (val: number) => {
+// Helper to format Indian currency for sliders (simplified for UI)
+const formatCurrencyCompact = (val: number) => {
   if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)} Cr`
   if (val >= 100000) return `₹${(val / 100000).toFixed(0)} L`
   return `₹${val.toLocaleString('en-IN')}`
@@ -74,13 +76,13 @@ const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, s
   <div className={cn("space-y-8 pb-8", isMobile ? "px-6" : "sticky top-24")}>
     <div className="flex items-center justify-between">
       <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-        <Filter className="w-5 h-5 text-primary" />
+        <Filter className="w-5 h-5 text-[#1A56DB]" />
         Filters
       </h2>
       <span 
         role="button"
         onClick={resetFilters}
-        className="text-xs font-bold text-slate-400 hover:text-primary transition-colors cursor-pointer"
+        className="text-xs font-bold text-slate-400 hover:text-[#1A56DB] transition-colors cursor-pointer"
       >
         Reset All
       </span>
@@ -98,7 +100,7 @@ const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, s
             <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
             <Input 
               placeholder="Developer, project, or keyword..." 
-              className="pl-10 h-10 bg-slate-50 border-none rounded-xl text-sm font-bold focus-visible:ring-primary/20"
+              className="pl-10 h-10 bg-slate-50 border-none rounded-xl text-sm font-bold focus-visible:ring-[#1A56DB]/20"
             />
           </div>
         </AccordionContent>
@@ -151,7 +153,7 @@ const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, s
                 className={cn(
                   "p-3 rounded-xl cursor-pointer border-2 transition-all flex flex-col items-center gap-2",
                   selectedTypes.includes(item.id) 
-                    ? "border-primary bg-primary/5 text-primary" 
+                    ? "border-[#1A56DB] bg-[#1A56DB]/5 text-[#1A56DB]" 
                     : "border-slate-50 bg-slate-50 text-slate-500 hover:border-slate-200"
                 )}
               >
@@ -177,7 +179,7 @@ const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, s
                 className={cn(
                   "px-4 py-2 rounded-xl cursor-pointer font-bold text-xs transition-all",
                   selectedBHK.includes(val)
-                    ? "bg-primary text-white shadow-lg shadow-primary/20"
+                    ? "bg-[#1A56DB] text-white shadow-lg shadow-[#1A56DB]/20"
                     : "bg-slate-50 text-slate-500 hover:bg-slate-100"
                 )}
               >
@@ -195,8 +197,8 @@ const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, s
         </AccordionTrigger>
         <AccordionContent className="pt-2 space-y-6">
           <div className="flex items-center justify-between text-xs font-black text-slate-500 tracking-widest uppercase">
-            <span>{formatCurrency(priceRange[0])}</span>
-            <span>{formatCurrency(priceRange[1])}</span>
+            <span>{formatCurrencyCompact(priceRange[0])}</span>
+            <span>{formatCurrencyCompact(priceRange[1])}</span>
           </div>
           <Slider 
             min={0} 
@@ -218,86 +220,6 @@ const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, s
           </div>
         </AccordionContent>
       </AccordionItem>
-
-      {/* Area */}
-      <AccordionItem value="area" className="border-none">
-        <AccordionTrigger className="hover:no-underline py-4 text-sm font-black text-slate-800 uppercase tracking-widest">
-          Area (Sq.Ft)
-        </AccordionTrigger>
-        <AccordionContent className="pt-2 space-y-4">
-           <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            <span>200 sqft</span>
-            <span>10,000 sqft</span>
-          </div>
-          <Slider 
-            min={200} 
-            max={10000} 
-            step={50} 
-            defaultValue={[500, 5000]}
-            className="py-4"
-          />
-        </AccordionContent>
-      </AccordionItem>
-
-      {/* Furnishing */}
-      <AccordionItem value="furnishing" className="border-none">
-        <AccordionTrigger className="hover:no-underline py-4 text-sm font-black text-slate-800 uppercase tracking-widest">
-          Furnishing
-        </AccordionTrigger>
-        <AccordionContent className="pt-2">
-          <div className="flex flex-wrap gap-2">
-            {['Unfurnished', 'Semi-Furnished', 'Fully Furnished'].map((val) => (
-              <Badge 
-                key={val}
-                variant="outline"
-                className="px-4 py-2 rounded-xl cursor-pointer font-bold text-[10px] border-2 uppercase tracking-wider hover:bg-slate-50 transition-all data-[selected=true]:bg-primary data-[selected=true]:text-white data-[selected=true]:border-primary"
-                data-selected={false}
-              >
-                {val}
-              </Badge>
-            ))}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-
-      {/* Amenities */}
-      <AccordionItem value="amenities" className="border-none">
-        <AccordionTrigger className="hover:no-underline py-4 text-sm font-black text-slate-800 uppercase tracking-widest">
-          Amenities
-        </AccordionTrigger>
-        <AccordionContent className="pt-2">
-          <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-            {['Parking', 'Lift', 'Gym', 'Pool', 'Security', 'Power Backup', 'Garden', 'Clubhouse'].map((amenity) => (
-              <div key={amenity} className="flex items-center space-x-2">
-                <Checkbox id={amenity} className="rounded-md border-2" />
-                <label htmlFor={amenity} className="text-xs font-bold text-slate-600 cursor-pointer">{amenity}</label>
-              </div>
-            ))}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-
-      {/* Posted Within */}
-      <AccordionItem value="posted" className="border-none">
-        <AccordionTrigger className="hover:no-underline py-4 text-sm font-black text-slate-800 uppercase tracking-widest">
-          Posted Within
-        </AccordionTrigger>
-        <AccordionContent className="pt-2">
-          <RadioGroup defaultValue="any" className="space-y-3">
-            {[
-              { label: "Last 24h", value: "24h" },
-              { label: "Last 7 days", value: "7d" },
-              { label: "Last 30 days", value: "30d" },
-              { label: "Any time", value: "any" },
-            ].map((item) => (
-              <div key={item.value} className="flex items-center space-x-3">
-                <RadioGroupItem value={item.value} id={item.value} className="border-2" />
-                <Label htmlFor={item.value} className="text-xs font-bold text-slate-600 uppercase tracking-widest">{item.label}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </AccordionContent>
-      </AccordionItem>
     </Accordion>
   </div>
 )
@@ -310,6 +232,7 @@ function SearchContent() {
   const [view, setView] = useState<"grid" | "list">("grid")
   const [showMap, setShowMap] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [properties, setProperties] = useState<any[]>([])
   
   // Pagination & Wishlist States
@@ -324,7 +247,42 @@ function SearchContent() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [city, setCity] = useState(searchParams.get("city") || "Ahmedabad")
   const [sortBy, setSortBy] = useState("newest")
- 
+  
+  const fetchProperties = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      let query = (supabase.from("properties") as any)
+        .select("*", { count: 'exact' })
+        .eq("status", "live")
+      
+      if (city) query = query.ilike('address', `%${city}%`)
+      if (selectedBHK.length > 0) query = query.in('bhk', selectedBHK.map(b => b.replace('+', '')))
+      if (selectedTypes.length > 0) query = query.in('type', selectedTypes)
+      
+      query = query.gte('price', priceRange[0]).lte('price', priceRange[1])
+
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+
+      const { data, error: fetchError, count } = await query
+        .order(sortBy === 'price-low' ? 'price' : 'updated_at', { 
+          ascending: sortBy === 'price-low',
+          nullsFirst: false 
+        })
+        .range(from, to)
+
+      if (fetchError) throw fetchError
+      setProperties(data || [])
+      setTotalCount(count || 0)
+    } catch (err: any) {
+      console.error("Search error:", err)
+      setError(err.message || "Failed to fetch properties")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const resetFilters = () => {
     setCity("Ahmedabad")
     setSelectedBHK([])
@@ -388,38 +346,6 @@ function SearchContent() {
   }
 
   useEffect(() => {
-    const fetchProperties = async () => {
-      setLoading(true)
-      try {
-        let query = (supabase.from("properties") as any)
-          .select("*", { count: 'exact' })
-          .eq("status", "live")
-        
-        if (city) query = query.ilike('address', `%${city}%`)
-        if (selectedBHK.length > 0) query = query.in('bhk', selectedBHK.map(b => b.replace('+', '')))
-        if (selectedTypes.length > 0) query = query.in('type', selectedTypes)
-        
-        query = query.gte('price', priceRange[0]).lte('price', priceRange[1])
-
-        const from = (page - 1) * pageSize
-        const to = from + pageSize - 1
-
-        const { data, error, count } = await query
-          .order(sortBy === 'price-low' ? 'price' : 'updated_at', { 
-            ascending: sortBy === 'price-low',
-            nullsFirst: false 
-          })
-          .range(from, to)
-
-        if (error) throw error
-        setProperties(data || [])
-        setTotalCount(count || 0)
-      } catch (error) {
-        console.error("Search error:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchProperties()
   }, [page, city, priceRange, selectedBHK, selectedTypes, sortBy, supabase])
 
@@ -465,7 +391,7 @@ function SearchContent() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
                 <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                  {properties.length} Properties in {city}
+                  {loading ? "Discovering..." : `${totalCount} Properties in ${city}`}
                 </h1>
                 <p className="text-slate-500 font-medium text-sm">Hand-picked verified listings matching your search.</p>
               </div>
@@ -494,7 +420,7 @@ function SearchContent() {
                   onClick={() => setShowMap(!showMap)}
                   size="sm" 
                   variant="ghost" 
-                  className={cn("rounded-xl h-9 px-4 font-bold gap-2", showMap && "bg-primary text-white hover:bg-primary-dark hover:text-white")}
+                  className={cn("rounded-xl h-9 px-4 font-bold gap-2", showMap && "bg-[#1A56DB] text-white hover:bg-[#1341A8] hover:text-white")}
                 >
                   <MapIcon className="w-4 h-4" />
                   {showMap ? "Hide Map" : "Show Map"}
@@ -544,56 +470,64 @@ function SearchContent() {
                 {city} <X className="w-3 h-3 cursor-pointer hover:text-red-500" />
               </Badge>
               <Badge className="bg-white hover:bg-white text-slate-600 border border-slate-200 rounded-full px-3 py-1 font-bold gap-2 flex items-center">
-                {formatCurrency(priceRange[0])} - {formatCurrency(priceRange[1])} <X className="w-3 h-3 cursor-pointer hover:text-red-500" />
+                {formatCurrencyCompact(priceRange[0])} - {formatCurrencyCompact(priceRange[1])} <X className="w-3 h-3 cursor-pointer hover:text-red-500" />
               </Badge>
             </div>
 
+            {/* Error State */}
+            {error && (
+              <ErrorState 
+                title="Failed to load properties"
+                description={error}
+                onRetry={fetchProperties}
+              />
+            )}
+
             {/* Main Grid/List View */}
-            <div className={cn(
-              "grid gap-8",
-              view === 'grid' ? (showMap ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3") : "grid-cols-1"
-            )}>
-              <AnimatePresence mode="popLayout">
-                {loading ? (
-                   Array(6).fill(0).map((_, i) => (
-                    <div key={i} className="bg-white rounded-[32px] h-96 animate-pulse border border-slate-100" />
-                   ))
-                ) : properties.length > 0 ? (
-                  properties.map((property) => (
-                    <motion.div
-                      layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      key={property.id}
-                    >
-                      <PropertyCard 
-                        property={property} 
-                        variant={view} 
-                        isWishlisted={wishlistIds.has(property.id)}
-                        onToggleWishlist={() => handleToggleWishlist(property.id)}
+            {!error && (
+              <div className={cn(
+                "grid gap-8",
+                view === 'grid' ? (showMap ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3") : "grid-cols-1"
+              )}>
+                <AnimatePresence mode="popLayout">
+                  {loading ? (
+                    Array(6).fill(0).map((_, i) => (view === 'grid' ? <PropertyCardSkeleton key={i} /> : <div key={i} className="bg-white rounded-[32px] h-48 animate-pulse border border-slate-100" />))
+                  ) : properties.length > 0 ? (
+                    properties.map((property) => (
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        key={property.id}
+                      >
+                        <PropertyCard 
+                          property={property} 
+                          variant={view} 
+                          isWishlisted={wishlistIds.has(property.id)}
+                          onToggleWishlist={() => handleToggleWishlist(property.id)}
+                        />
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-12">
+                      <EmptyState 
+                        title="No properties found"
+                        description="We couldn't find any properties matching your current filters. Try adjusting your criteria or resetting all filters."
+                        actionLabel="Reset All Filters"
+                        onAction={resetFilters}
+                        icon={Search}
                       />
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-20 flex flex-col items-center justify-center text-center space-y-6">
-                    <div className="w-32 h-32 bg-slate-100 rounded-full flex items-center justify-center">
-                      <Search className="w-12 h-12 text-slate-300" />
                     </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-black text-slate-900">No properties found</h3>
-                      <p className="text-slate-500 max-w-md mx-auto font-medium">We couldn&apos;t find any properties matching your current filters. Try adjusting your criteria or resetting all filters.</p>
-                    </div>
-                    <Button variant="outline" className="rounded-xl font-bold px-8 h-12">Reset All Filters</Button>
-                  </div>
-                )}
-              </AnimatePresence>
-            </div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
 
             {/* Pagination */}
-            {totalCount > pageSize && (
+            {!loading && !error && totalCount > pageSize && (
               <div className="pt-12 flex justify-center">
-                <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100 italic">
+                <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -627,13 +561,13 @@ function SearchContent() {
             <div className="hidden lg:block flex-1 h-[calc(100vh-140px)] sticky top-28 rounded-[40px] overflow-hidden border-4 border-white shadow-2xl">
               <div className="w-full h-full bg-slate-200 relative group">
                 <div className="absolute inset-0 bg-[url('https://api.mapbox.com/styles/v1/mapbox/light-v10/static/72.5714,23.0225,12/1200x800?access_token=pk.eyJ1Ijoiam9obmRvZSIsImEiOiJjbDFhMmIzYTRjNWQzM2VwZXF6eGZpMW5oIn0.a1b2c3d4e5f6')] bg-cover bg-center">
-                   <div className="absolute top-1/4 left-1/3 p-2 bg-primary text-white font-black text-xs rounded-full shadow-xl shadow-primary/40 flex items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
+                   <div className="absolute top-1/4 left-1/3 p-2 bg-[#1A56DB] text-white font-black text-xs rounded-full shadow-xl shadow-[#1A56DB]/40 flex items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
                       ₹45L
                    </div>
-                   <div className="absolute top-1/2 left-1/2 p-2 bg-primary text-white font-black text-xs rounded-full shadow-xl shadow-primary/40 flex items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
+                   <div className="absolute top-1/2 left-1/2 p-2 bg-[#1A56DB] text-white font-black text-xs rounded-full shadow-xl shadow-[#1A56DB]/40 flex items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
                       ₹1.2Cr
                    </div>
-                   <div className="absolute top-2/3 left-1/4 p-2 bg-primary text-white font-black text-xs rounded-full shadow-xl shadow-primary/40 flex items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
+                   <div className="absolute top-2/3 left-1/4 p-2 bg-[#1A56DB] text-white font-black text-xs rounded-full shadow-xl shadow-[#1A56DB]/40 flex items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
                       ₹85L
                    </div>
                 </div>
@@ -653,7 +587,11 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div>Loading Search...</div>}>
+    <Suspense fallback={
+       <div className="min-h-screen bg-slate-50 pt-24 flex items-center justify-center">
+          <RefreshCcw className="w-8 h-8 animate-spin text-[#1A56DB]" />
+       </div>
+    }>
       <SearchContent />
     </Suspense>
   )
