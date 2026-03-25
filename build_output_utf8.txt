@@ -1,0 +1,186 @@
+﻿
+> proptech@0.1.0 build
+> next build
+
+  Γû▓ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully
+   Linting and checking validity of types ...
+node.exe : 
+At C:\Program Files\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Failed to compile.
+
+./app/(auth)/forgot-password/page.tsx
+30:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(auth)/login/page.tsx
+11:10  Error: 'Phone' is defined but never used.  @typescript-eslint/no-unused-vars
+22:10  Error: 'activeTab' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+40:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+67:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+83:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(auth)/register/page.tsx
+49:21  Error: 'authData' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+73:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(auth)/reset-password/page.tsx
+50:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(auth)/verify/page.tsx
+42:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+85:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+102:21  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(buyer)/bookings/page.tsx
+3:10  Error: 'useState' is defined but never used.  @typescript-eslint/no-unused-vars
+4:18  Error: 'AnimatePresence' is defined but never used.  @typescript-eslint/no-unused-vars
+6:3  Error: 'ShoppingBag' is defined but never used.  @typescript-eslint/no-unused-vars
+9:3  Error: 'ExternalLink' is defined but never used.  @typescript-eslint/no-unused-vars
+14:3  Error: 'IndianRupee' is defined but never used.  @typescript-eslint/no-unused-vars
+96:46  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+129:16  Error: 'MapPin' is not defined.  react/jsx-no-undef
+
+./app/(buyer)/chat/page.tsx
+4:18  Error: 'AnimatePresence' is defined but never used.  @typescript-eslint/no-unused-vars
+15:3  Error: 'LayoutGrid' is defined but never used.  @typescript-eslint/no-unused-vars
+65:52  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(buyer)/home/page.tsx
+137:58  Error: 'i' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/(buyer)/notifications/page.tsx
+10:3  Error: 'Info' is defined but never used.  @typescript-eslint/no-unused-vars
+172:103  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/(buyer)/profile/page.tsx
+4:10  Error: 'motion' is defined but never used.  @typescript-eslint/no-unused-vars
+139:55  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/(buyer)/visits/page.tsx
+3:10  Error: 'useState' is defined but never used.  @typescript-eslint/no-unused-vars
+4:18  Error: 'AnimatePresence' is defined but never used.  @typescript-eslint/no-unused-vars
+9:3  Error: 'User' is defined but never used.  @typescript-eslint/no-unused-vars
+95:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(buyer)/wishlist/page.tsx
+20:50  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(owner)/analytics/page.tsx
+19:3  Error: 'TrendingUp' is defined but never used.  @typescript-eslint/no-unused-vars
+30:16  Error: 'CardContent' is defined but never used.  @typescript-eslint/no-unused-vars
+30:29  Error: 'CardHeader' is defined but never used.  @typescript-eslint/no-unused-vars
+32:10  Error: 'Badge' is defined but never used.  @typescript-eslint/no-unused-vars
+53:10  Error: 'timeRange' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+53:21  Error: 'setTimeRange' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/(owner)/boost/page.tsx
+5:3  Error: 'Zap' is defined but never used.  @typescript-eslint/no-unused-vars
+7:3  Error: 'TrendingUp' is defined but never used.  @typescript-eslint/no-unused-vars
+11:3  Error: 'Star' is defined but never used.  @typescript-eslint/no-unused-vars
+12:3  Error: 'ChevronRight' is defined but never used.  @typescript-eslint/no-unused-vars
+16:3  Error: 'ArrowRight' is defined but never used.  @typescript-eslint/no-unused-vars
+19:16  Error: 'CardContent' is defined but never used.  @typescript-eslint/no-unused-vars
+19:29  Error: 'CardHeader' is defined but never used.  @typescript-eslint/no-unused-vars
+19:41  Error: 'CardTitle' is defined but never used.  @typescript-eslint/no-unused-vars
+19:52  Error: 'CardDescription' is defined but never used.  @typescript-eslint/no-unused-vars
+122:22  Error: 'Separator' is not defined.  react/jsx-no-undef
+190:30  Error: 'Separator' is not defined.  react/jsx-no-undef
+201:34  Error: 'Separator' is not defined.  react/jsx-no-undef
+
+./app/(owner)/dashboard/page.tsx
+3:10  Error: 'useState' is defined but never used.  @typescript-eslint/no-unused-vars
+3:20  Error: 'useEffect' is defined but never used.  @typescript-eslint/no-unused-vars
+6:10  Error: 'motion' is defined but never used.  @typescript-eslint/no-unused-vars
+13:3  Error: 'CheckCircle2' is defined but never used.  @typescript-eslint/no-unused-vars
+14:3  Error: 'XCircle' is defined but never used.  @typescript-eslint/no-unused-vars
+17:3  Error: 'Calendar' is defined but never used.  @typescript-eslint/no-unused-vars
+21:3  Error: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+26:10  Error: 'formatIndianPrice' is defined but never used.  @typescript-eslint/no-unused-vars
+85:9  Error: 'supabase' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+95:65  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+301:80  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+301:95  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./app/(owner)/help/page.tsx
+4:3  Error: 'BarChart' is defined but never used.  @typescript-eslint/no-unused-vars
+5:3  Error: 'Eye' is defined but never used.  @typescript-eslint/no-unused-vars
+6:3  Error: 'MessageSquare' is defined but never used.  @typescript-eslint/no-unused-vars
+7:3  Error: 'TrendingUp' is defined but never used.  @typescript-eslint/no-unused-vars
+8:3  Error: 'Trash2' is defined but never used.  @typescript-eslint/no-unused-vars
+9:3  Error: 'CheckCircle2' is defined but never used.  @typescript-eslint/no-unused-vars
+10:3  Error: 'XCircle' is defined but never used.  @typescript-eslint/no-unused-vars
+11:3  Error: 'Clock' is defined but never used.  @typescript-eslint/no-unused-vars
+12:3  Error: 'FileText' is defined but never used.  @typescript-eslint/no-unused-vars
+13:3  Error: 'ChevronRight' is defined but never used.  @typescript-eslint/no-unused-vars
+14:3  Error: 'ArrowUpDown' is defined but never used.  @typescript-eslint/no-unused-vars
+15:3  Error: 'Download' is defined but never used.  @typescript-eslint/no-unused-vars
+26:16  Error: 'CardContent' is defined but never used.  @typescript-eslint/no-unused-vars
+26:29  Error: 'CardHeader' is defined but never used.  @typescript-eslint/no-unused-vars
+26:41  Error: 'CardTitle' is defined but never used.  @typescript-eslint/no-unused-vars
+26:52  Error: 'CardDescription' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/(owner)/listings/[id]/page.tsx
+54:12  Error: 'ChevronRight' is not defined.  react/jsx-no-undef
+56:12  Error: 'ChevronRight' is not defined.  react/jsx-no-undef
+61:18  Error: 'Edit3' is not defined.  react/jsx-no-undef
+64:18  Error: 'Trash2' is not defined.  react/jsx-no-undef
+188:26  Error: 'MessageSquare' is not defined.  react/jsx-no-undef
+223:38  Error: 'Phone' is not defined.  react/jsx-no-undef
+230:44  Error: 'ArrowRight' is not defined.  react/jsx-no-undef
+237:22  Error: 'TrendingUp' is not defined.  react/jsx-no-undef
+
+./app/(owner)/post/page.tsx
+20:3  Error: 'ArrowRight' is defined but never used.  @typescript-eslint/no-unused-vars
+21:3  Error: 'GripVertical' is defined but never used.  @typescript-eslint/no-unused-vars
+22:3  Error: 'Trash2' is defined but never used.  @typescript-eslint/no-unused-vars
+25:3  Error: 'Layers' is defined but never used.  @typescript-eslint/no-unused-vars
+35:16  Error: 'CardContent' is defined but never used.  @typescript-eslint/no-unused-vars
+68:10  Error: 'isPreview' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+68:21  Error: 'setIsPreview' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+72:9  Error: 'supabase' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+263:138  Error: 'PlusCircle' is not defined.  react/jsx-no-undef
+264:138  Error: 'PlusCircle' is not defined.  react/jsx-no-undef
+466:38  Error: 'PlusCircle' is not defined.  react/jsx-no-undef
+
+./app/(owner)/settings/page.tsx
+3:10  Error: 'useState' is defined but never used.  @typescript-eslint/no-unused-vars
+15:3  Error: 'Smartphone' is defined but never used.  @typescript-eslint/no-unused-vars
+16:3  Error: 'Globe' is defined but never used.  @typescript-eslint/no-unused-vars
+17:3  Error: 'CheckCircle2' is defined but never used.  @typescript-eslint/no-unused-vars
+18:3  Error: 'ChevronRight' is defined but never used.  @typescript-eslint/no-unused-vars
+19:3  Error: 'Info' is defined but never used.  @typescript-eslint/no-unused-vars
+32:41  Error: 'CardTitle' is defined but never used.  @typescript-eslint/no-unused-vars
+32:52  Error: 'CardDescription' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/(public)/about/page.tsx
+4:23  Error: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+4:43  Error: 'Heart' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/(public)/property/[id]/page.tsx
+5:10  Error: 'motion' is defined but never used.  @typescript-eslint/no-unused-vars
+9:3  Error: 'Bath' is defined but never used.  @typescript-eslint/no-unused-vars
+18:3  Error: 'Mail' is defined but never used.  @typescript-eslint/no-unused-vars
+32:3  Error: 'MessageCircle' is defined but never used.  @typescript-eslint/no-unused-vars
+46:3  Error: 'DialogFooter' is defined but never used.  @typescript-eslint/no-unused-vars
+541:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/(public)/search/page.tsx
+4:10  Error: 'useRouter' is defined but never used.  @typescript-eslint/no-unused-vars
+13:3  Error: 'ChevronDown' is defined but never used.  @typescript-eslint/no-unused-vars
+14:3  Error: 'ChevronUp' is defined but never used.  @typescript-eslint/no-unused-vars
+16:3  Error: 'IndianRupee' is defined but never used.  @typescript-eslint/no-unused-vars
+18:3  Error: 'Waves' is defined but never used.  @typescript-eslint/no-unused-vars
+19:3  Error: 'ShieldCheck' is defined but never used.  @typescript-eslint/no-unused-vars
+27:10  Error: 'Separator' is defined but never used.  @typescript-eslint/no-unused-vars
+315:22  Error: 'setProperties' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+467:91  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
