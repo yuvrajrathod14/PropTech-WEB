@@ -66,40 +66,101 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession();
 
   const url = new URL(request.url);
-  const userRole = session?.user?.user_metadata?.role;
+  const pathname = url.pathname;
 
-  // Protect routes
+  // Rule 1: PUBLIC routes - express pass
+  const PUBLIC_ROUTES = [
+    "/", "/search", "/how-it-works", "/pricing", "/about",
+    "/contact", "/terms", "/privacy", "/login", "/register", 
+    "/forgot-password", "/reset-password", "/verify", "/blocked", "/admin/login"
+  ];
+
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname === route) || pathname.startsWith("/property/");
+
+  if (isPublicRoute) {
+    // If logged in and hitting /login or /register, redirect to dashboard
+    if (session && (pathname === "/login" || pathname === "/register")) {
+        const userRole = session.user.user_metadata?.role || "buyer";
+        const redirectPath = userRole === 'admin' ? '/admin/dashboard' : userRole === 'owner' ? '/owner/dashboard' : '/buyer/home';
+        return NextResponse.redirect(new URL(redirectPath, request.url));
+    }
+    return response;
+  }
+
+  // Auth requirement for all internal routes
   if (!session) {
-    if (url.pathname.startsWith("/buyer") || url.pathname.startsWith("/owner") || url.pathname.startsWith("/admin")) {
-        // Special case for admin login
-        if (url.pathname.startsWith("/admin") && !url.pathname.startsWith("/admin/login")) {
-             return NextResponse.redirect(new URL("/admin/login", request.url));
-        }
-        if (!url.pathname.startsWith("/admin") && !url.pathname.startsWith("/login")) {
-            return NextResponse.redirect(new URL("/login", request.url));
-        }
-    }
-  } else {
-    // Session exists - handle role-based redirection
-    // Prevent logged-in users from hitting /login or /register
-    if (url.pathname === "/login" || url.pathname === "/register") {
-      const redirectPath = userRole === 'admin' ? '/admin' : userRole === 'owner' ? '/owner/dashboard' : '/home';
-      return NextResponse.redirect(new URL(redirectPath, request.url));
-    }
-
-    // Role-based access control
-    if (url.pathname.startsWith("/owner") && userRole !== "owner" && userRole !== "admin") {
-      return NextResponse.redirect(new URL("/home", request.url));
+    if (pathname.startsWith("/admin")) {
+        return NextResponse.redirect(new URL("/admin/login", request.url));
     }
     
-    if (url.pathname.startsWith("/admin") && userRole !== "admin" && !url.pathname.startsWith("/admin/login")) {
-      return NextResponse.redirect(new URL("/home", request.url));
+    // Rule 2 & 3: Save URL for redirect after login
+    const loginResponse = NextResponse.redirect(new URL("/login", request.url));
+    loginResponse.cookies.set("redirect_after_login", pathname, { maxAge: 3600 }); // 1 hour
+    return loginResponse;
+  }
+
+  // Fetch Profile for Role & Blocked status (Rule 2, 3, 4)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_blocked")
+    .eq("id", session.user.id)
+    .single();
+
+  const userRole = profile?.role || session.user.user_metadata?.role || "buyer";
+  const isBlocked = profile?.is_blocked || false;
+
+  // Rule 2 & 3: Blocked User Redirect
+  if (isBlocked && pathname !== "/blocked") {
+    return NextResponse.redirect(new URL("/blocked", request.url));
+  }
+
+  // Rule 4: ADMIN routes protection
+  if (pathname.startsWith("/admin")) {
+    if (userRole !== "admin" && userRole !== "super_admin") {
+        const loginUrl = new URL("/admin/login", request.url);
+        loginUrl.searchParams.set("error", "Access denied");
+        return NextResponse.redirect(loginUrl);
     }
 
-    if (url.pathname.startsWith("/buyer") && userRole !== "buyer" && userRole !== "admin") {
-      // If an owner tries to access buyer pages... maybe allowed? 
-      // But usually, we want to keep them separate for now.
-      // Let's allow owner to see buyer pages for now, but not vice-versa.
+    // Role = moderator restrictions
+    if (userRole === "admin" && (pathname.startsWith("/admin/settings/admins") || pathname.startsWith("/admin/audit-log"))) {
+        // Technically Moderator is a separate role or just 'admin' with limited access. 
+        // User said: "If role = moderator -> redirect to dashboard".
+        // Let's assume 'admin' is the base and 'super_admin' is the high-level.
+        // Wait, I'll check if 'moderator' is a valid role in DB. It's not in Enums.
+        // I'll stick to the logic for specific restrictive paths.
+        // If the user meant a specific role 'moderator', I'll handle it.
+        if (session.user.user_metadata?.role === "moderator") {
+            return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+        }
+    }
+  }
+
+  // Rule 2: BUYER routes
+  if (pathname.startsWith("/buyer")) {
+    // Owners can browse buyer routes, but buyers cannot access owner routes without switch.
+    // If not buyer or owner (e.g. admin browsing), allow.
+  }
+
+  // Rule 3: OWNER routes
+  if (pathname.startsWith("/owner")) {
+    if (userRole === "buyer") {
+        // Redirect to role switch interstitial
+        const switchUrl = new URL("/role-switch", request.url);
+        switchUrl.searchParams.set("returnUrl", pathname);
+        return NextResponse.redirect(switchUrl);
+    }
+    
+    if (userRole !== "owner" && userRole !== "admin" && userRole !== "super_admin") {
+        return NextResponse.redirect(new URL("/buyer/home", request.url));
+    }
+  }
+
+  // Rule 5: PAYMENT routes protection
+  if (pathname === "/buyer/booking/success" || pathname === "/buyer/booking/failed") {
+    const hasPendingBooking = request.cookies.get("pending_booking")?.value;
+    if (!hasPendingBooking) {
+        return NextResponse.redirect(new URL("/buyer/bookings", request.url));
     }
   }
 

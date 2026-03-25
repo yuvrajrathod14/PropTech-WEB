@@ -11,6 +11,7 @@ import {
   Bed, 
   Factory 
 } from "lucide-react"
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 
 const propertyTypes = [
@@ -50,27 +51,32 @@ export function PropertyTypeExplorer() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {propertyTypes.map((type, index) => (
-            <motion.div
-              key={type.name}
-              initial={{ opacity: 1, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.05 }}
-              whileHover={{ 
-                y: -5,
-                borderColor: "hsl(var(--primary))",
-                transition: { duration: 0.2 }
-              }}
-              className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer group transition-colors"
+            <Link 
+              key={type.name} 
+              href={`/search?type=${encodeURIComponent(type.name)}`}
+              className="block"
             >
-              <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
-                {type.icon}
-              </div>
-              <h3 className="font-bold text-slate-900 group-hover:text-primary transition-colors">{type.name}</h3>
-              <Badge variant="secondary" className="mt-3 bg-white text-slate-500 font-semibold border-slate-100">
-                {type.count} listings
-              </Badge>
-            </motion.div>
+              <motion.div
+                initial={{ opacity: 1, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ 
+                  y: -5,
+                  borderColor: "hsl(var(--primary))",
+                  transition: { duration: 0.2 }
+                }}
+                className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer group transition-colors"
+              >
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+                  {type.icon}
+                </div>
+                <h3 className="font-bold text-slate-900 group-hover:text-primary transition-colors">{type.name}</h3>
+                <Badge variant="secondary" className="mt-3 bg-white text-slate-500 font-semibold border-slate-100">
+                  {type.count} listings
+                </Badge>
+              </motion.div>
+            </Link>
           ))}
         </div>
       </div>

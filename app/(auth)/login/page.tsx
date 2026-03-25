@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { Mail, Lock, Loader2, Eye, EyeOff, Smartphone, Key } from "lucide-react"
+import { Mail, Lock, Loader2, Eye, EyeOff, Smartphone, Key, ShieldCheck, User, Store } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -29,6 +29,54 @@ export default function LoginPage() {
   // Phone state
   const [phone, setPhone] = useState("")
 
+  const loginAs = async (demoEmail: string) => {
+    setEmail(demoEmail)
+    setPassword("demo1234")
+    setIsLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email: demoEmail, 
+        password: "demo1234" 
+      })
+      if (error) throw error
+      toast({ title: "Demo Login Success", description: `Logged in as ${demoEmail}` })
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("User not found after login")
+
+      const { data: profile } = await supabase.from('profiles').select('is_blocked, role').eq('id', user.id).single() as { data: any }
+      
+      if (profile?.is_blocked) {
+        await supabase.auth.signOut()
+        router.push('/blocked')
+        return
+      }
+
+      const cookies = document.cookie.split("; ")
+      const redirectCookie = cookies.find(row => row.startsWith("redirect_after_login="))
+      let redirectPath = "/"
+      
+      if (redirectCookie) {
+        redirectPath = decodeURIComponent(redirectCookie.split("=")[1])
+        document.cookie = "redirect_after_login=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      } else {
+        const role = profile?.role || user?.user_metadata?.role
+        redirectPath = role === "admin" || role === "super_admin" 
+          ? "/admin/dashboard" 
+          : role === "owner" 
+            ? "/owner/dashboard" 
+            : "/buyer/home"
+      }
+      
+      router.push(redirectPath)
+      router.refresh()
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Demo Login Failed", description: error.message })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -36,7 +84,38 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       toast({ title: "Welcome back!", description: "Successfully logged in." })
-      router.push("/")
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("User not found after login")
+
+      const { data: profile } = await supabase.from('profiles').select('is_blocked, role').eq('id', user.id).single() as { data: any }
+      
+      if (profile?.is_blocked) {
+        await supabase.auth.signOut()
+        router.push('/blocked')
+        return
+      }
+
+      // Rule 6: Handle redirect after login
+      const cookies = document.cookie.split("; ")
+      const redirectCookie = cookies.find(row => row.startsWith("redirect_after_login="))
+      let redirectPath = "/"
+      
+      if (redirectCookie) {
+        redirectPath = decodeURIComponent(redirectCookie.split("=")[1])
+        // Clear the cookie
+        document.cookie = "redirect_after_login=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      } else {
+        // Default role-based redirect
+        const role = profile?.role || user?.user_metadata?.role
+        redirectPath = role === "admin" || role === "super_admin" 
+          ? "/admin/dashboard" 
+          : role === "owner" 
+            ? "/owner/dashboard" 
+            : "/buyer/home"
+      }
+      
+      router.push(redirectPath)
       router.refresh()
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred"
@@ -197,6 +276,7 @@ export default function LoginPage() {
           variant="outline" 
           onClick={handleGoogleLogin}
           className="w-full h-14 border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl flex gap-3 transition-all active:scale-95"
+          disabled={isLoading}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -206,6 +286,36 @@ export default function LoginPage() {
           </svg>
           Sign in with Google
         </Button>
+
+        <div className="pt-2">
+          <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Quick Demo Access</p>
+          <div className="grid grid-cols-3 gap-3">
+            <button 
+              onClick={() => loginAs('buyer@demo.com')}
+              disabled={isLoading}
+              className="flex flex-col items-center justify-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group disabled:opacity-50"
+            >
+              <User className="w-5 h-5 text-slate-400 group-hover:text-blue-500 mb-1" />
+              <span className="text-[10px] font-black text-slate-600 group-hover:text-blue-700">BUYER</span>
+            </button>
+            <button 
+              onClick={() => loginAs('owner@demo.com')}
+              disabled={isLoading}
+              className="flex flex-col items-center justify-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-orange-200 hover:bg-orange-50 transition-all group disabled:opacity-50"
+            >
+              <Store className="w-5 h-5 text-slate-400 group-hover:text-orange-500 mb-1" />
+              <span className="text-[10px] font-black text-slate-600 group-hover:text-orange-700">OWNER</span>
+            </button>
+            <button 
+              onClick={() => loginAs('admin@demo.com')}
+              disabled={isLoading}
+              className="flex flex-col items-center justify-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-purple-200 hover:bg-purple-50 transition-all group disabled:opacity-50"
+            >
+              <ShieldCheck className="w-5 h-5 text-slate-400 group-hover:text-purple-500 mb-1" />
+              <span className="text-[10px] font-black text-slate-600 group-hover:text-purple-700">ADMIN</span>
+            </button>
+          </div>
+        </div>
 
         <p className="text-center text-sm text-slate-500 font-medium">
           Don&apos;t have an account?{" "}

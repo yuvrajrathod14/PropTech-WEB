@@ -1,184 +1,205 @@
 "use client"
 
-import { useState } from "react"
-import { motion } from "framer-motion"
+import Link from "next/link"
 import { 
-  ShieldCheck, 
-  Users, 
-  Building2, 
-  CheckCircle2, 
-  XCircle, 
-  Eye, 
   TrendingUp, 
+  Users, 
+  Home, 
+  CreditCard, 
+  CheckCircle2, 
+  Clock, 
   AlertCircle,
-  ArrowRight
+  ArrowUpRight,
+  ArrowDownRight,
+  MoreVertical,
+  Activity,
+  Zap,
+  ShieldAlert
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import Image from "next/image"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { formatIndianPrice } from "@/lib/utils/formatPrice"
-import { mockProperties } from "@/lib/mock-data"
+import { Card } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
+import { 
+    DropdownMenu, 
+    DropdownMenuContent, 
+    DropdownMenuItem, 
+    DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
 
-const adminStats = [
-  { name: "Total Properties", value: "1,248", icon: Building2, color: "bg-blue-500", trend: "+12%" },
-  { name: "Total Users", value: "542", icon: Users, color: "bg-purple-500", trend: "+8%" },
-  { name: "Pending Approval", value: "24", icon: Clock, color: "bg-amber-500", trend: "-5%" },
-  { name: "Total Revenue", value: "₹45.2L", icon: TrendingUp, color: "bg-emerald-500", trend: "+24%" },
+const kpis = [
+  { label: "Total Revenue", value: "₹12.4L", change: "+14.2%", icon: CreditCard, color: "bg-emerald-500", trend: "up" },
+  { label: "Active Listings", value: "842", change: "+5.1%", icon: Home, color: "bg-blue-500", trend: "up" },
+  { label: "New Users", value: "156", change: "-2.4%", icon: Users, color: "bg-primary", trend: "down" },
+  { label: "Avg. Session", value: "4m 20s", change: "+12%", icon: Activity, color: "bg-amber-500", trend: "up" },
 ]
 
-import { Clock } from "lucide-react"
-
-export default function AdminDashboardPage() {
-  const [pendingProperties] = useState(mockProperties.slice(0, 4))
-
+export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-slate-50 pt-24 pb-12">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-1 text-center md:text-left">
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              <ShieldCheck className="w-10 h-10 text-primary" />
-              Admin Command Center
-            </h1>
-            <p className="text-slate-500 font-medium tracking-tight">Managing the PropTech ecosystem and moderating content.</p>
-          </div>
-          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-            <Button variant="ghost" size="sm" className="font-bold text-slate-600 rounded-xl">Logs</Button>
-            <Button size="sm" className="bg-slate-900 hover:bg-slate-800 rounded-xl font-bold px-6">System Status</Button>
-          </div>
+    <div className="space-y-10 pb-20">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight italic">Dashboard</h1>
+          <p className="text-slate-500 font-medium">Welcome back, Super Admin. Here&apos;s what&apos;s happening today.</p>
         </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {adminStats.map((stat) => (
-            <Card key={stat.name} className="border-none shadow-sm rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg", stat.color)}>
-                    <stat.icon className="w-6 h-6" />
-                  </div>
-                  <span className="text-xs font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">{stat.trend}</span>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.name}</p>
-                  <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="h-12 rounded-2xl border-slate-100 bg-white font-bold gap-2">
+            Weekly Report
+          </Button>
+          <Button className="h-12 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black px-6 shadow-xl shadow-slate-200 transition-all active:scale-95 italic">
+            Download Audit
+          </Button>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Moderation Queue */}
-          <div className="lg:col-span-2 space-y-8">
-            <Card className="border-none shadow-sm rounded-[32px] overflow-hidden">
-              <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl font-black flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-amber-500" />
-                    Pending Moderation
-                  </CardTitle>
-                  <CardDescription className="font-medium">Property listings awaiting verification.</CardDescription>
-                </div>
-                <Button variant="ghost" className="text-xs font-bold text-primary px-0 hover:bg-transparent">View All (24)</Button>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-slate-50">
-                  {pendingProperties.map((property) => (
-                    <div key={property.id} className="p-8 flex flex-col md:flex-row items-center justify-between gap-6 group hover:bg-slate-50/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-20 h-20 rounded-2xl bg-slate-100 overflow-hidden shrink-0 relative">
-                          <Image src={property.image} fill className="object-cover" alt={property.title} />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="font-black text-slate-900 group-hover:text-primary transition-colors">{property.title}</h4>
-                          <p className="text-xs text-slate-500 font-bold flex items-center gap-2">
-                            <MapPin className="w-3 h-3" /> {property.location} • <IndianRupee className="w-3 h-3" /> {formatIndianPrice(property.price)}
-                          </p>
-                          <div className="flex items-center gap-2 pt-1">
-                            <div className="w-4 h-4 rounded-full bg-slate-200" />
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{property.owner_name}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 w-full md:w-auto">
-                        <Button className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-11 gap-2">
-                          <CheckCircle2 className="w-4 h-4" /> Approve
-                        </Button>
-                        <Button variant="outline" className="flex-1 md:flex-none text-red-500 border-red-100 hover:bg-red-50 rounded-xl font-bold h-11 gap-2">
-                          <XCircle className="w-4 h-4" /> Reject
-                        </Button>
-                        <Button variant="ghost" size="icon" className="rounded-xl h-11 w-11 hover:bg-white border border-transparent hover:border-slate-100">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* System Health */}
-          <div className="space-y-8">
-            <Card className="border-none shadow-sm rounded-[32px] p-8">
-              <CardTitle className="text-lg font-black mb-6 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-primary" />
-                Security & Health
-              </CardTitle>
-              <div className="space-y-6">
-                {[
-                  { label: "Storage Capacity", value: "42%", color: "bg-blue-500" },
-                  { label: "API Requests", value: "88%", color: "bg-emerald-500" },
-                  { label: "Moderation Queue", value: "12%", color: "bg-amber-500" },
-                  { label: "Server Load", value: "24%", color: "bg-purple-500" },
-                ].map((item, i) => (
-                  <div key={i} className="space-y-2">
-                    <div className="flex justify-between items-center text-xs font-black text-slate-500 uppercase tracking-widest">
-                      <span>{item.label}</span>
-                      <span className="text-slate-900">{item.value}</span>
-                    </div>
-                    <div className="h-2 bg-slate-50 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: item.value }}
-                        transition={{ duration: 1, delay: i * 0.1 }}
-                        className={cn("h-full rounded-full shadow-sm", item.color)} 
-                      />
-                    </div>
-                  </div>
-                ))}
+      {/* KPI Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {kpis.map((kpi, i) => (
+          <Card key={i} className="border-none shadow-sm rounded-[32px] p-8 space-y-6 bg-white group hover:shadow-xl transition-all">
+            <div className={`w-14 h-14 rounded-2xl ${kpi.color} text-white flex items-center justify-center shadow-lg shadow-slate-200 transition-transform group-hover:scale-110`}>
+              <kpi.icon className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{kpi.label}</p>
+              <div className="flex items-baseline gap-3">
+                <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{kpi.value}</h3>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 ${
+                  kpi.trend === 'up' ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+                }`}>
+                  {kpi.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  {kpi.change}
+                </span>
               </div>
-            </Card>
+            </div>
+          </Card>
+        ))}
+      </div>
 
-            <Card className="border-none shadow-sm rounded-[32px] p-8 bg-slate-900 text-white overflow-hidden group">
-              <div className="relative z-10 space-y-6">
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Main Content Area: Pending Actions */}
+        <div className="lg:col-span-2 space-y-6">
+            <Card className="border-none shadow-sm rounded-[40px] p-8 bg-white space-y-8">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-black">User Reports</h3>
-                  <Badge className="bg-red-500 text-white border-none font-bold">3 New</Badge>
-                </div>
-                <div className="space-y-4">
-                  {[1, 2].map(i => (
-                    <div key={i} className="bg-white/5 p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
-                      <p className="text-xs text-slate-400 font-bold uppercase mb-2">Spam / Incorrect Info</p>
-                      <h6 className="font-bold text-sm mb-1">Reported Property ID: #4205</h6>
-                      <p className="text-[10px] text-slate-500">By user: @ashish_kr • 12m ago</p>
+                    <div>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight italic">Pending Moderation</h3>
+                        <p className="text-sm font-medium text-slate-400">12 listings require your immediate attention.</p>
                     </div>
-                  ))}
+                    <Link href="/admin/listings">
+                        <Button variant="ghost" className="text-primary font-black text-xs uppercase tracking-widest hover:bg-primary/5">View All</Button>
+                    </Link>
                 </div>
-                <Button className="w-full bg-primary hover:bg-primary-dark rounded-xl h-12 font-black group gap-2">
-                  Handle Reports <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </div>
+
+                <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-6 p-6 rounded-[24px] border border-slate-50 hover:border-primary/20 hover:bg-slate-50/30 transition-all group">
+                            <div className="w-20 h-20 rounded-2xl bg-slate-100 overflow-hidden shrink-0 shadow-sm relative">
+                                <div className="absolute top-1 right-1 bg-white/90 backdrop-blur-md rounded-lg p-1">
+                                     <Zap className="w-3 h-3 text-primary fill-primary" />
+                                </div>
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                                <h4 className="text-lg font-black text-slate-900 truncate tracking-tight">Luxury 4BHK Villa</h4>
+                                <p className="text-xs font-bold text-slate-400 italic">Posted by Aryan Kumar • 2h ago</p>
+                                <div className="flex gap-2 pt-1">
+                                    <Badge className="bg-slate-100 text-slate-400 border-none font-bold text-[9px] uppercase tracking-widest px-2">RESIDENTIAL</Badge>
+                                    <Badge className="bg-primary/5 text-primary border-none font-bold text-[9px] uppercase tracking-widest px-2">₹2.4 Cr</Badge>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black h-10 px-5 shadow-lg shadow-emerald-100 italic transition-all active:scale-95">Approve</Button>
+                                <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50 rounded-xl h-10 w-10 p-0"><CheckCircle2 className="w-5 h-5 rotate-45" /></Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </Card>
-          </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="border-none shadow-sm rounded-[32px] p-8 bg-white space-y-6">
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight italic">User Growth</h3>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500">Owners</span>
+                            <span className="text-xs font-black text-slate-900">+42%</span>
+                        </div>
+                        <Progress value={85} className="h-2 bg-slate-100" />
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500">Buyers</span>
+                            <span className="text-xs font-black text-slate-900">+58%</span>
+                        </div>
+                        <Progress value={65} className="h-2 bg-slate-100" />
+                    </div>
+                </Card>
+                <Card className="border-none shadow-sm rounded-[32px] p-8 bg-white space-y-6">
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight italic">Platform Health</h3>
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                            <ShieldAlert className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-slate-900">Zero Security Threats</p>
+                            <p className="text-[10px] font-bold text-slate-400 italic">Last scan 5m ago</p>
+                        </div>
+                    </div>
+                    <Button variant="outline" className="w-full h-11 rounded-xl border-slate-100 font-bold text-xs">Run Diagnostic</Button>
+                </Card>
+            </div>
+        </div>
+
+        {/* Sidebar: Recent Logs & Reports */}
+        <div className="space-y-6">
+             <Card className="border-none shadow-sm rounded-[40px] p-8 bg-white space-y-8">
+                <h3 className="text-xl font-black text-slate-900 tracking-tight italic">Recent Activity</h3>
+                <div className="space-y-6 relative before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">
+                    {[
+                        { title: "System payout completed", time: "10m ago", icon: CreditCard, color: "text-emerald-500" },
+                        { title: "New user reported listing #2", time: "34m ago", icon: AlertCircle, color: "text-red-500" },
+                        { title: "Admin 'Varun' approved #42", time: "1h ago", icon: CheckCircle2, color: "text-blue-500" },
+                        { title: "New owner registration", time: "2h ago", icon: Users, color: "text-primary" },
+                    ].map((log, i) => (
+                        <div key={i} className="flex gap-4 relative pl-8">
+                            <div className={`absolute left-0 w-5 h-5 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center -translate-x-[2px] z-10 ${log.color}`}>
+                                <log.icon className="w-2.5 h-2.5" />
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-xs font-bold text-slate-900 leading-tight">{log.title}</p>
+                                <p className="text-[10px] font-medium text-slate-400 italic">{log.time}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <Button variant="ghost" className="w-full text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900">View All Logs</Button>
+             </Card>
+
+             <div className="bg-slate-900 rounded-[40px] p-8 text-white space-y-6 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
+                    <Activity className="w-24 h-24" />
+                </div>
+                <div className="space-y-2 relative">
+                    <h4 className="text-2xl font-black italic tracking-tight">System Alerts</h4>
+                    <p className="text-white/60 text-xs font-medium leading-relaxed italic">The platform is experiencing higher than usual traffic in the <span className="text-white font-bold underline decoration-primary underline-offset-4">Ahmedabad</span> region.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button className="flex-1 bg-white text-slate-900 hover:bg-slate-100 rounded-2xl font-black h-12 text-xs shadow-xl shadow-white/5 italic">
+                        Optimize Load
+                    </Button>
+                    <Button variant="ghost" size="icon" className="w-12 h-12 rounded-2xl border border-white/10 hover:bg-white/5 transition-all">
+                        <MoreVertical className="w-5 h-5" />
+                    </Button>
+                </div>
+             </div>
         </div>
       </div>
     </div>
   )
 }
 
-import { cn } from "@/lib/utils"
-import { MapPin, IndianRupee } from "lucide-react"
+function Badge({ children, className }: { children: React.ReactNode, className?: string }) {
+    return (
+        <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-bold", className)}>
+            {children}
+        </span>
+    )
+}

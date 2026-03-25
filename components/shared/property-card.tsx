@@ -28,12 +28,22 @@ export interface Property {
 export function PropertyCard({ 
   property, 
   className, 
-  variant = "grid" 
+  variant = "grid",
+  isWishlisted = false,
+  onToggleWishlist
 }: { 
   property: Property, 
   className?: string,
-  variant?: "grid" | "list" | "mini"
+  variant?: "grid" | "list" | "mini",
+  isWishlisted?: boolean,
+  onToggleWishlist?: (e: React.MouseEvent) => void
 }) {
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onToggleWishlist?.(e)
+  }
+
   if (variant === "list") {
     return (
       <motion.div
@@ -106,8 +116,19 @@ export function PropertyCard({
                   View Details
                </Button>
              </Link>
-             <Button variant="outline" size="icon" className="w-12 h-12 rounded-2xl border-2 hover:bg-slate-50 group/heart">
-                <Heart className="w-5 h-5 group-hover/heart:text-red-500 transition-colors" />
+             <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handleWishlistClick}
+                className={cn(
+                  "w-12 h-12 rounded-2xl border-2 hover:bg-slate-50 group/heart transition-all",
+                  isWishlisted ? "bg-red-50 border-red-100" : "border-slate-100"
+                )}
+             >
+                <Heart className={cn(
+                  "w-5 h-5 transition-colors",
+                  isWishlisted ? "fill-red-500 text-red-500" : "text-slate-400 group-hover/heart:text-red-500"
+                )} />
              </Button>
           </div>
         </div>
@@ -149,8 +170,15 @@ export function PropertyCard({
             </div>
             
             <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-              <Button size="icon" className="w-10 h-10 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900 hover:text-red-500">
-                <Heart className="w-5 h-5" />
+              <Button 
+                size="icon" 
+                onClick={handleWishlistClick}
+                className={cn(
+                  "w-10 h-10 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white transition-all",
+                  isWishlisted ? "text-red-500" : "text-slate-900 hover:text-red-500"
+                )}
+              >
+                <Heart className={cn("w-5 h-5", isWishlisted && "fill-current")} />
               </Button>
             </div>
 

@@ -8,7 +8,8 @@ import {
   Clock,
   XCircle,
   RotateCcw,
-  MapPin
+  MapPin,
+  MessageSquare
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -162,13 +163,23 @@ function BookingCard({ booking }: { booking: Booking }) {
         </div>
 
         {/* Actions */}
-        <div className="flex md:flex-col gap-3 md:justify-center shrink-0">
-          <Button className="flex-1 md:flex-none rounded-xl h-12 px-6 font-black gap-2">
-            Details <ArrowRight className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" className="flex-1 md:flex-none rounded-xl h-12 w-12 p-0 border-slate-100 hover:bg-slate-50">
-            <Download className="w-4 h-4 text-slate-400" />
-          </Button>
+        <div className="flex flex-col md:flex-row lg:flex-col gap-3 md:justify-center shrink-0 w-full lg:w-48">
+          <Link href={`/buyer/bookings/${booking.id}`} className="flex-1 lg:flex-none">
+            <Button className="w-full rounded-2xl h-12 px-6 font-black gap-2 bg-slate-900 shadow-xl shadow-slate-200">
+              View Details <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+          <div className="flex gap-2">
+            <Link href={`/buyer/chat?booking=${booking.id}`} className="flex-1">
+              <Button variant="outline" className="w-full rounded-2xl h-12 border-slate-100 hover:bg-slate-50 gap-2 font-bold">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                Chat
+              </Button>
+            </Link>
+            <Button variant="outline" className="rounded-2xl h-12 w-12 p-0 border-slate-100 hover:bg-slate-50 group-hover:border-primary/20">
+              <Download className="w-4 h-4 text-slate-400" />
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>

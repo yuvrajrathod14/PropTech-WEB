@@ -11,14 +11,34 @@ import {
   X, 
   Home, 
   PlusCircle, 
+  Bell,
+  User,
+  LogOut,
+  LayoutDashboard,
+  Heart,
+  ShoppingBag,
+  MessageSquare,
+  BarChart3,
+  List,
 } from "lucide-react"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navLinks = [
   { name: "Home", href: "/" },
-  { name: "Search", href: "/search" },
+  { name: "Properties", href: "/search" },
   { name: "How it Works", href: "/how-it-works" },
+  { name: "Pricing", href: "/pricing" },
   { name: "About", href: "/about" },
 ]
 
@@ -89,33 +109,136 @@ export function Navbar() {
           {!loading && (
             <>
               {user ? (
-                <div className="flex items-center space-x-2">
-                  <Link href="/buyer/dashboard">
-                    <Button variant="ghost" size="sm" className="font-bold text-slate-600 hover:text-primary rounded-xl">
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleLogout}
-                    className="font-bold text-slate-600 hover:text-destructive rounded-xl"
-                  >
-                    Logout
-                  </Button>
+                <div className="flex items-center space-x-4">
+                  {/* Notifications */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="relative rounded-xl hover:bg-slate-100">
+                        <Bell className="w-5 h-5 text-slate-600" />
+                        <Badge className="absolute -top-1 -right-1 w-4 h-4 p-0 flex items-center justify-center bg-primary text-[10px] border-2 border-white">3</Badge>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-80 p-2 rounded-2xl shadow-2xl border-slate-100">
+                      <DropdownMenuLabel className="font-bold text-slate-900 border-b border-slate-50 pb-2 mb-2">Notifications</DropdownMenuLabel>
+                      <div className="space-y-1">
+                         {[1, 2, 3].map((i) => (
+                           <DropdownMenuItem key={i} className="p-3 rounded-xl cursor-pointer hover:bg-slate-50 flex gap-3">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+                                <Bell className="w-4 h-4" />
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                <p className="text-xs font-bold text-slate-900">New property enquiry recived</p>
+                                <p className="text-[10px] text-slate-400 font-medium">2 minutes ago</p>
+                              </div>
+                           </DropdownMenuItem>
+                         ))}
+                      </div>
+                      <DropdownMenuSeparator className="my-2 bg-slate-50" />
+                      <DropdownMenuItem className="w-full justify-center text-xs font-bold text-primary cursor-pointer hover:bg-slate-50 rounded-xl py-2">View All Notifications</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Profile Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="p-1 rounded-2xl hover:bg-slate-100 h-auto">
+                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                          <AvatarImage src={user.user_metadata?.avatar_url} />
+                          <AvatarFallback className="bg-slate-200 text-slate-600 font-bold">
+                            {user.email?.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl border-slate-100">
+                        <DropdownMenuLabel className="p-3">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-black text-slate-900 truncate">{user.user_metadata?.full_name || "User Account"}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{user.user_metadata?.role || "Buyer"}</p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator className="bg-slate-50" />
+                        
+                        {/* Role Based Links */}
+                        {user.user_metadata?.role === 'owner' ? (
+                          <>
+                            <DropdownMenuItem className="p-0">
+                              <Link href="/owner/dashboard" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <LayoutDashboard className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">Dashboard</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-0">
+                              <Link href="/owner/listings" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <List className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">My Listings</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-0">
+                              <Link href="/owner/post" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <PlusCircle className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">Post Property</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-0">
+                              <Link href="/owner/analytics" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <BarChart3 className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">Analytics</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          </>
+                        ) : (
+                          <>
+                            <DropdownMenuItem className="p-0">
+                              <Link href="/buyer/profile" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <User className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">My Profile</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-0">
+                              <Link href="/buyer/wishlist" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <Heart className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">Saved Properties</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-0">
+                              <Link href="/buyer/bookings" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <ShoppingBag className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">My Bookings</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="p-0">
+                              <Link href="/buyer/chat" className="flex items-center gap-3 p-3 w-full rounded-xl cursor-pointer">
+                                <MessageSquare className="w-4 h-4 text-slate-500" />
+                                <span className="font-bold text-slate-700">My Chats</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        
+                        <DropdownMenuSeparator className="bg-slate-50" />
+                        <DropdownMenuItem 
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 p-3 rounded-xl cursor-pointer text-destructive focus:bg-destructive/5 focus:text-destructive"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            <span className="font-bold text-sm">Sign Out</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ) : (
                 <Link href="/login">
-                  <Button variant="ghost" size="sm" className="font-bold text-slate-600 hover:text-primary rounded-xl">
+                  <Button variant="ghost" size="sm" className="font-bold text-slate-600 hover:text-primary rounded-xl px-5">
                     Sign In
                   </Button>
                 </Link>
               )}
             </>
           )}
-          <Link href="/owner/post">
-            <Button size="sm" className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 rounded-xl px-6 h-11 font-bold">
-              <PlusCircle className="w-4 h-4 mr-2" />
+          <Link href={user ? "/owner/post" : "/register?role=owner"}>
+            <Button size="sm" className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 rounded-xl px-6 h-11 font-bold group transition-all active:scale-95 text-white">
+              <PlusCircle className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform" />
               List Property
             </Button>
           </Link>

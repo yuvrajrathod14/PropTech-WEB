@@ -4,10 +4,19 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/types'
 
-type SiteVisit = Database['public']['Tables']['site_visits']['Row']
+type VisitWithProperty = Database['public']['Tables']['site_visits']['Row'] & {
+  property: {
+    title: string
+    images: string[]
+    location: {
+      city: string
+      locality: string
+    }[]
+  }
+}
 
 export function useVisits() {
-  const [visits, setVisits] = useState<any[]>([])
+  const [visits, setVisits] = useState<VisitWithProperty[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,9 +37,9 @@ export function useVisits() {
           .order('visit_date', { ascending: false })
 
         if (fetchError) throw fetchError
-        setVisits(data)
-      } catch (err: any) {
-        setError(err.message)
+        setVisits((data as unknown) as VisitWithProperty[])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred')
       } finally {
         setLoading(false)
       }

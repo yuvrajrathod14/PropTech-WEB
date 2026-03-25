@@ -4,10 +4,19 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/types'
 
-type Booking = Database['public']['Tables']['bookings']['Row']
+type BookingWithProperty = Database['public']['Tables']['bookings']['Row'] & {
+  property: {
+    title: string
+    images: string[]
+    location: {
+      city: string
+      locality: string
+    }[]
+  }
+}
 
 export function useBookings() {
-  const [bookings, setBookings] = useState<any[]>([])
+  const [bookings, setBookings] = useState<BookingWithProperty[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,9 +37,9 @@ export function useBookings() {
           .order('created_at', { ascending: false })
 
         if (fetchError) throw fetchError
-        setBookings(data)
-      } catch (err: any) {
-        setError(err.message)
+        setBookings((data as unknown) as BookingWithProperty[])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred')
       } finally {
         setLoading(false)
       }

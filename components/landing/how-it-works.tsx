@@ -3,6 +3,8 @@
 import { motion } from "framer-motion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search, MessageSquare, CheckCircle, PlusCircle, ShieldCheck, Banknote } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 const buyerSteps = [
   {
@@ -94,6 +96,18 @@ export function HowItWorks() {
                 </motion.div>
               ))}
             </div>
+            <motion.div 
+              initial={{ opacity: 1, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-12 text-center"
+            >
+              <Link href="/register">
+                <Button size="lg" className="rounded-2xl px-8 py-6 font-black text-lg shadow-xl shadow-primary/20">
+                  Join as Buyer
+                </Button>
+              </Link>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="sellers">
@@ -119,6 +133,18 @@ export function HowItWorks() {
                 </motion.div>
               ))}
             </div>
+            <motion.div 
+              initial={{ opacity: 1, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-12 text-center"
+            >
+              <Link href="/register?role=owner">
+                <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-8 py-6 font-black text-lg shadow-xl shadow-emerald-900/20">
+                  List as Owner
+                </Button>
+              </Link>
+            </motion.div>
           </TabsContent>
         </Tabs>
       </div>

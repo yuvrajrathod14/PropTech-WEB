@@ -87,13 +87,16 @@ function DropdownMenuItem({
   className,
   inset,
   variant = "default",
+  asChild = false,
   ...props
 }: MenuPrimitive.Item.Props & {
   inset?: boolean
   variant?: "default" | "destructive"
+  asChild?: boolean
 }) {
+  const Comp = asChild ? Slot : MenuPrimitive.Item
   return (
-    <MenuPrimitive.Item
+    <Comp
       data-slot="dropdown-menu-item"
       data-inset={inset}
       data-variant={variant}

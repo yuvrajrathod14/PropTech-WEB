@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { createClient } from "@/lib/supabase/client"
 import { 
   Search, 
   Map as MapIcon, 
@@ -66,9 +67,10 @@ interface FiltersProps {
   toggleType: (type: string) => void;
   selectedBHK: string[];
   toggleBHK: (bhk: string) => void;
+  resetFilters: () => void;
 }
 
-const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, selectedTypes, toggleType, selectedBHK, toggleBHK }: FiltersProps) => (
+const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, selectedTypes, toggleType, selectedBHK, toggleBHK, resetFilters }: FiltersProps) => (
   <div className={cn("space-y-8 pb-8", isMobile ? "px-6" : "sticky top-24")}>
     <div className="flex items-center justify-between">
       <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -77,6 +79,7 @@ const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, s
       </h2>
       <span 
         role="button"
+        onClick={resetFilters}
         className="text-xs font-bold text-slate-400 hover:text-primary transition-colors cursor-pointer"
       >
         Reset All
@@ -300,28 +303,130 @@ const Filters = ({ isMobile = false, city, setCity, priceRange, setPriceRange, s
 )
 
 function SearchContent() {
-  // Removed unused router
+  const router = useRouter()
+  const supabase = createClient()
   const searchParams = useSearchParams()
   
   const [view, setView] = useState<"grid" | "list">("grid")
   const [showMap, setShowMap] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [properties] = useState(mockProperties)
+  const [properties, setProperties] = useState<any[]>([])
+  
+  // Pagination & Wishlist States
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set())
+  const pageSize = 12
   
   // Filter States
-  const [priceRange, setPriceRange] = useState([500000, 50000000])
+  const [priceRange, setPriceRange] = useState([500000, 100000000])
   const [selectedBHK, setSelectedBHK] = useState<string[]>([])
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-  const [city, setCity] = useState("Ahmedabad")
+  const [city, setCity] = useState(searchParams.get("city") || "Ahmedabad")
+  const [sortBy, setSortBy] = useState("newest")
+ 
+  const resetFilters = () => {
+    setCity("Ahmedabad")
+    setSelectedBHK([])
+    setSelectedTypes([])
+    setPriceRange([500000, 100000000])
+    setPage(1)
+  }
+
+  // Fetch Wishlist
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      
+      const { data } = await supabase
+        .from("wishlist")
+        .select("property_id")
+        .eq("user_id", session.user.id)
+      
+      if (data) {
+        setWishlistIds(new Set(data.map((w: any) => w.property_id)))
+      }
+    }
+    fetchWishlist()
+  }, [supabase])
+
+  const handleToggleWishlist = async (propertyId: string) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return router.push("/login")
+
+    const isCurrentlyWishlisted = wishlistIds.has(propertyId)
+    
+    // Optimistic Update
+    setWishlistIds(prev => {
+      const next = new Set(prev)
+      if (isCurrentlyWishlisted) next.delete(propertyId)
+      else next.add(propertyId)
+      return next
+    })
+
+    try {
+      if (isCurrentlyWishlisted) {
+        await (supabase.from("wishlist") as any)
+          .delete()
+          .eq("user_id", session.user.id)
+          .eq("property_id", propertyId)
+      } else {
+        await (supabase.from("wishlist") as any)
+          .insert({ user_id: session.user.id, property_id: propertyId })
+      }
+    } catch (error) {
+      console.error("Wishlist toggle error:", error)
+      // Rollback on error
+      setWishlistIds(prev => {
+        const next = new Set(prev)
+        if (isCurrentlyWishlisted) next.add(propertyId)
+        else next.delete(propertyId)
+        return next
+      })
+    }
+  }
 
   useEffect(() => {
-    // Simulate fetching with filters
-    setLoading(true)
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 800)
-    return () => clearTimeout(timer)
-  }, [searchParams, city, priceRange, selectedBHK, selectedTypes])
+    const fetchProperties = async () => {
+      setLoading(true)
+      try {
+        let query = (supabase.from("properties") as any)
+          .select("*", { count: 'exact' })
+          .eq("status", "live")
+        
+        if (city) query = query.ilike('address', `%${city}%`)
+        if (selectedBHK.length > 0) query = query.in('bhk', selectedBHK.map(b => b.replace('+', '')))
+        if (selectedTypes.length > 0) query = query.in('type', selectedTypes)
+        
+        query = query.gte('price', priceRange[0]).lte('price', priceRange[1])
+
+        const from = (page - 1) * pageSize
+        const to = from + pageSize - 1
+
+        const { data, error, count } = await query
+          .order(sortBy === 'price-low' ? 'price' : 'updated_at', { 
+            ascending: sortBy === 'price-low',
+            nullsFirst: false 
+          })
+          .range(from, to)
+
+        if (error) throw error
+        setProperties(data || [])
+        setTotalCount(count || 0)
+      } catch (error) {
+        console.error("Search error:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProperties()
+  }, [page, city, priceRange, selectedBHK, selectedTypes, sortBy, supabase])
+
+  // Reset page on filter change
+  useEffect(() => {
+    setPage(1)
+  }, [city, priceRange, selectedBHK, selectedTypes, sortBy])
 
   const toggleBHK = (val: string) => {
     setSelectedBHK(prev => 
@@ -339,7 +444,8 @@ function SearchContent() {
     city, setCity,
     priceRange, setPriceRange,
     selectedTypes, toggleType,
-    selectedBHK, toggleBHK
+    selectedBHK, toggleBHK,
+    resetFilters
   }
 
   return (
@@ -393,6 +499,19 @@ function SearchContent() {
                   <MapIcon className="w-4 h-4" />
                   {showMap ? "Hide Map" : "Show Map"}
                 </Button>
+
+                <div className="hidden sm:block">
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="h-9 border-none bg-slate-50 rounded-xl font-bold text-xs min-w-[140px]">
+                      <SelectValue placeholder="Sort By" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                      <SelectItem value="price-low">Price: Low to High</SelectItem>
+                      <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 <Drawer>
                   <DrawerTrigger asChild>
@@ -448,7 +567,12 @@ function SearchContent() {
                       exit={{ opacity: 0, scale: 0.9 }}
                       key={property.id}
                     >
-                      <PropertyCard property={property} variant={view} />
+                      <PropertyCard 
+                        property={property} 
+                        variant={view} 
+                        isWishlisted={wishlistIds.has(property.id)}
+                        onToggleWishlist={() => handleToggleWishlist(property.id)}
+                      />
                     </motion.div>
                   ))
                 ) : (
@@ -467,24 +591,35 @@ function SearchContent() {
             </div>
 
             {/* Pagination */}
-            <div className="pt-12 flex justify-center">
-              <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-                <Button variant="ghost" size="sm" className="rounded-xl font-bold">Prev</Button>
-                {[1, 2, 3].map(i => (
+            {totalCount > pageSize && (
+              <div className="pt-12 flex justify-center">
+                <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100 italic">
                   <Button 
-                    key={i} 
+                    variant="ghost" 
                     size="sm" 
-                    variant={i === 1 ? 'default' : 'ghost'} 
-                    className="h-9 w-9 rounded-xl font-bold"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="rounded-xl font-black text-[10px] uppercase tracking-widest px-4 hover:bg-slate-50 disabled:opacity-30"
                   >
-                    {i}
+                    Prev
                   </Button>
-                ))}
-                <span className="text-slate-300 mx-2">•••</span>
-                <Button size="sm" variant="ghost" className="h-9 w-9 rounded-xl font-bold">12</Button>
-                <Button variant="ghost" size="sm" className="rounded-xl font-bold">Next</Button>
+                  <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
+                        Page <span className="text-slate-900">{page}</span> of <span className="text-slate-900">{Math.ceil(totalCount / pageSize)}</span>
+                      </span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={page * pageSize >= totalCount}
+                    className="rounded-xl font-black text-[10px] uppercase tracking-widest px-4 hover:bg-slate-50 disabled:opacity-30"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </main>
 
           {/* Map Section - Full Column on Right */}

@@ -3,6 +3,8 @@
 import { motion } from "framer-motion"
 import { Star, Quote } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 const testimonials = [
   {
@@ -82,6 +84,24 @@ export function Testimonials() {
             </motion.div>
           ))}
         </div>
+
+        <motion.div 
+          initial={{ opacity: 1, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-20 text-center"
+        >
+          <div className="inline-flex flex-col items-center space-y-4">
+            <Link href="/register">
+              <Button size="lg" className="rounded-2xl px-12 py-8 font-black text-xl shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+                Get Started Now
+              </Button>
+            </Link>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">
+              Join 25,000+ happy users today
+            </p>
+          </div>
+        </motion.div>
       </div>
     </section>
   )

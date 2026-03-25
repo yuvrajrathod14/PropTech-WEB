@@ -65,11 +65,13 @@ export default function RegisterPage() {
       // For this implementation, we rely on the signUp metadata which middleware reads.
 
       toast({ 
-        title: "Account Created!", 
-        description: "Please check your email to verify your account." 
+        title: `Welcome to PropTech, ${formData.fullName}!`, 
+        description: "Your account has been created successfully." 
       })
       
-      router.push("/login")
+      // 4. Redirect based on role
+      const redirectPath = role === "owner" ? "/owner/dashboard" : "/buyer/home"
+      router.push(redirectPath)
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred"
       toast({ variant: "destructive", title: "Registration Failed", description: message })

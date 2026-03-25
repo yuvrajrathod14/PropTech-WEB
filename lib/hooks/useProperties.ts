@@ -52,8 +52,8 @@ export function useProperties(filters?: {
 
         if (fetchError) throw fetchError
         setProperties(data as PropertyWithDetails[])
-      } catch (err: any) {
-        setError(err.message)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred')
       } finally {
         setLoading(false)
       }

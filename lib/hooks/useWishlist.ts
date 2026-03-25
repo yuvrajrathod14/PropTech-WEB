@@ -29,9 +29,9 @@ export function useWishlist() {
           .eq('user_id', user.id)
 
         if (fetchError) throw fetchError
-        setWishlist(data.map((item: any) => item.property) as PropertyWithDetails[])
-      } catch (err: any) {
-        setError(err.message)
+        setWishlist(data.map((item: { property: any }) => item.property) as PropertyWithDetails[])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred')
       } finally {
         setLoading(false)
       }
@@ -59,7 +59,10 @@ export function useWishlist() {
       } else {
         const { error } = await supabase
           .from('wishlists')
-          .insert({ user_id: user.id, property_id: propertyId })
+          .insert({ 
+            user_id: user.id, 
+            property_id: propertyId 
+          } as any)
         
         if (error) throw error
         // Re-fetch or manually add (re-fetch is safer for complex joins)
@@ -77,8 +80,8 @@ export function useWishlist() {
           setWishlist(prev => [...prev, propertyData as PropertyWithDetails])
         }
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred')
     }
   }
 
