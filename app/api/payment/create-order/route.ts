@@ -58,7 +58,6 @@ export async function POST(req: Request) {
       .insert({
         property_id: propertyId,
         buyer_id: user.id,
-        owner_id: property.owner_id,
         amount: amount,
         platform_fee: fee,
         total_amount: amount + fee,
