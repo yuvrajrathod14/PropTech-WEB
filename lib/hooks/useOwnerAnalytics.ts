@@ -15,41 +15,40 @@ export function useOwnerAnalytics() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        // Fetch properties summary
-        const { data: properties, error: pError } = await supabase
-          .from('properties')
+        // 1. Fetch properties for this owner
+        const { data: properties, error: pError } = await (supabase.from('properties') as any)
           .select('id, view_count, status')
           .eq('owner_id', user.id)
 
         if (pError) throw pError
 
-        // Fetch enquiries count
-        const { count: enquiries, error: eError } = await supabase
-          .from('enquiries')
+        // 2. Fetch enquiries count
+        const { count: enquiries, error: eError } = await (supabase.from('enquiries') as any)
           .select('*', { count: 'exact', head: true })
           .eq('owner_id', user.id)
 
         if (eError) throw eError
 
-        // Fetch bookings total
-        const { data: bookings, error: bError } = await supabase
-          .from('bookings')
+        // 3. Fetch bookings total
+        const { data: bookings, error: bError } = await (supabase.from('bookings') as any)
           .select('amount')
           .eq('owner_id', user.id)
           .eq('status', 'success')
 
         if (bError) throw bError
 
-        const totalViews = properties.reduce((acc, p) => acc + (p.view_count || 0), 0)
-        const totalEarnings = bookings.reduce((acc, b) => acc + (b.amount || 0), 0)
-        const activeListings = properties.filter(p => p.status === 'approved').length
+        // Calculate metrics
+        const propertyList = properties || []
+        const totalViews = propertyList.reduce((acc: number, p: any) => acc + (p.view_count || 0), 0)
+        const totalEarnings = (bookings || []).reduce((acc: number, b: any) => acc + (b.amount || 0), 0)
+        const activeListings = propertyList.filter((p: any) => p.status === 'live').length
 
         setAnalytics({
           totalViews,
           totalEarnings,
           activeListings,
           totalEnquiries: enquiries || 0,
-          totalPropertyCount: properties.length
+          totalPropertyCount: propertyList.length
         })
       } catch (err: any) {
         setError(err.message)

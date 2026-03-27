@@ -3,8 +3,10 @@
 import { ShieldAlert, LogOut, MessageCircle, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function BlockedPage() {
+  const { signOut } = useAuth()
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 relative overflow-hidden">
       {/* Background Decorative Elements */}
@@ -50,10 +52,13 @@ export default function BlockedPage() {
                     <ArrowLeft className="w-4 h-4" /> Back to Home Page
                 </Link>
             </Button>
-            <div className="flex items-center justify-center gap-2 text-white/20">
+            <button 
+              onClick={() => signOut()} 
+              className="flex items-center justify-center gap-2 text-white/40 hover:text-white/80 transition-colors cursor-pointer"
+            >
                 <LogOut className="w-4 h-4" />
                 <span className="text-[9px] font-black tracking-widest uppercase">Logout Securely</span>
-            </div>
+            </button>
         </div>
       </div>
       

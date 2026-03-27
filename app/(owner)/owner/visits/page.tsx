@@ -111,12 +111,12 @@ export default function OwnerVisitsPage() {
                 <Card key={visit.id} className="rounded-[40px] overflow-hidden border-none shadow-xl shadow-slate-200/50 bg-white group hover:scale-[1.01] transition-all duration-300">
                   <CardContent className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-8">
                     
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
                       <div className="w-20 h-20 rounded-[30px] bg-primary/5 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-white transition-all duration-500">
                         <Calendar className="w-8 h-8" />
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
+                      <div className="space-y-2 text-center sm:text-left">
+                        <div className="flex flex-col sm:flex-row items-center gap-3">
                           <h3 className="text-xl font-black text-slate-900 tracking-tight">{visit.property?.property_name}</h3>
                           <Badge className={cn(
                             "rounded-full px-3 py-1 font-black text-[9px] uppercase tracking-wider border-none",
@@ -128,20 +128,20 @@ export default function OwnerVisitsPage() {
                           </Badge>
                         </div>
                         <div className="flex flex-col gap-1">
-                          <div className="flex items-center text-slate-500 font-bold text-sm">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {visit.property?.address}, {visit.property?.city}
+                          <div className="flex items-center justify-center sm:justify-start text-slate-500 font-bold text-sm">
+                            <MapPin className="w-4 h-4 mr-2 shrink-0" />
+                            <span className="truncate max-w-[200px]">{visit.property?.address}, {visit.property?.city}</span>
                           </div>
-                          <div className="flex items-center text-slate-900 font-black text-sm uppercase tracking-widest mt-1">
-                            <User className="w-4 h-4 mr-2 text-primary" />
+                          <div className="flex items-center justify-center sm:justify-start text-slate-900 font-black text-sm uppercase tracking-widest mt-1">
+                            <User className="w-4 h-4 mr-2 text-primary shrink-0" />
                             Buyer: {visit.buyer?.full_name}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col md:items-end gap-4 shrink-0">
-                      <div className="text-right">
+                    <div className="flex flex-col md:items-end gap-4 shrink-0 border-t md:border-t-0 pt-6 md:pt-0 border-slate-50">
+                      <div className="text-center md:text-right">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Preferred Date</p>
                         <p className="text-2xl font-black text-slate-900 italic tracking-tighter">
                           {new Date(visit.preferred_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -149,18 +149,18 @@ export default function OwnerVisitsPage() {
                       </div>
 
                       {visit.status === 'pending' && (
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 w-full md:w-auto">
                            <Button 
                              onClick={() => updateStatus(visit.id, 'rejected', visit.user_id, visit.property?.property_name)}
                              variant="outline" 
-                             className="rounded-2xl h-12 px-6 font-black text-xs uppercase tracking-widest border-slate-100 hover:bg-slate-50"
+                             className="rounded-2xl h-12 px-6 font-black text-xs uppercase tracking-widest border-slate-100 hover:bg-slate-50 flex-1"
                            >
                              <XCircle className="w-4 h-4 mr-2 text-red-500" />
                              Reject
                            </Button>
                            <Button 
                              onClick={() => updateStatus(visit.id, 'confirmed', visit.user_id, visit.property?.property_name)}
-                             className="rounded-2xl h-12 px-6 font-black text-xs uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
+                             className="rounded-2xl h-12 px-6 font-black text-xs uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 flex-1"
                            >
                               <CheckCircle2 className="w-4 h-4 mr-2" />
                               Confirm

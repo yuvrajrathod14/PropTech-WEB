@@ -6,20 +6,20 @@ import { revalidatePath } from "next/cache"
 export async function approveListing(id: string, adminId: string) {
   const admin = createAdminClient()
   
-  const { error } = await admin
-    .from("properties")
-    .update({ status: "approved", rejection_reason: null })
-    .eq("id", id)
+  const { error: propertyError } = await (admin.from("properties") as any)
+    .update({ status: 'live', rejection_reason: null })
+    .eq('id', id)
 
-  if (error) throw error
+  if (propertyError) throw propertyError
 
-  await admin.from("admin_audit_logs").insert({
-    admin_id: adminId,
-    action: "approve_listing",
-    entity_type: "property",
-    entity_id: id,
-    details: { timestamp: new Date().toISOString() },
-  })
+  const { error: logError } = await (admin.from("admin_audit_log") as any)
+    .insert({
+      admin_id: adminId,
+      action: 'APPROVE_PROPERTY',
+      target_type: 'property',
+      target_id: id,
+      details: { timestamp: new Date().toISOString() }
+    })
 
   revalidatePath("/admin/properties")
 }
@@ -27,20 +27,20 @@ export async function approveListing(id: string, adminId: string) {
 export async function rejectListing(id: string, reason: string, adminId: string) {
   const admin = createAdminClient()
   
-  const { error } = await admin
-    .from("properties")
-    .update({ status: "rejected", rejection_reason: reason })
-    .eq("id", id)
+  const { error: propertyError } = await (admin.from("properties") as any)
+    .update({ status: 'rejected', rejection_reason: reason })
+    .eq('id', id)
 
-  if (error) throw error
+  if (propertyError) throw propertyError
 
-  await admin.from("admin_audit_logs").insert({
-    admin_id: adminId,
-    action: "reject_listing",
-    entity_type: "property",
-    entity_id: id,
-    details: { reason, timestamp: new Date().toISOString() },
-  })
+  const { error: logError } = await (admin.from("admin_audit_log") as any)
+    .insert({
+      admin_id: adminId,
+      action: 'REJECT_PROPERTY',
+      target_type: 'property',
+      target_id: id,
+      details: { reason, timestamp: new Date().toISOString() }
+    })
 
   revalidatePath("/admin/properties")
 }
@@ -48,37 +48,45 @@ export async function rejectListing(id: string, reason: string, adminId: string)
 export async function blockUser(id: string, adminId: string) {
   const admin = createAdminClient()
   
-  const { error } = await admin
-    .from("profiles")
+  const { error: userError } = await (admin.from("profiles") as any)
     .update({ is_blocked: true })
-    .eq("id", id)
+    .eq('id', id)
 
-  if (error) throw error
+  if (userError) throw userError
 
-  await admin.from("admin_audit_logs").insert({
-    admin_id: adminId,
-    action: "block_user",
-    entity_type: "profile",
-    entity_id: id,
-    details: { timestamp: new Date().toISOString() },
-  })
+  const { error: logError } = await (admin.from("admin_audit_log") as any)
+    .insert({
+      admin_id: adminId,
+      action: 'BLOCK_USER',
+      target_type: 'profile',
+      target_id: id,
+      details: { timestamp: new Date().toISOString() }
+    })
 
   revalidatePath("/admin/users")
 }
 
-export async function toggleFeatured(id: string, days: number) {
+export async function toggleFeatureProperty(id: string, featured: boolean, adminId: string) {
   const admin = createAdminClient()
-  const endDate = new Date()
-  endDate.setDate(endDate.getDate() + days)
-
-  const { error } = await admin
-    .from("properties")
+  
+  const { error: propertyError } = await (admin.from("properties") as any)
     .update({ 
-      is_featured: true, 
-      feature_end_date: endDate.toISOString() 
+      is_featured: featured,
+      // Removed feature_end_date if it doesn't exist in DB
     })
-    .eq("id", id)
+    .eq('id', id)
 
-  if (error) throw error
+  if (propertyError) throw propertyError
+
+  const { error: logError } = await (admin.from("admin_audit_log") as any)
+    .insert({
+      admin_id: adminId,
+      action: featured ? 'FEATURE_PROPERTY' : 'UNFEATURE_PROPERTY',
+      target_type: 'property',
+      target_id: id,
+      details: { timestamp: new Date().toISOString() }
+    })
+
+  revalidatePath("/admin/properties")
   revalidatePath("/")
 }

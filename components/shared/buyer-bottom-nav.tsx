@@ -6,7 +6,7 @@ import { LayoutDashboard, Heart, MessageSquare, User, Search } from "lucide-reac
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Home", href: "/buyer/dashboard" },
+  { icon: LayoutDashboard, label: "Home", href: "/buyer/home" },
   { icon: Search, label: "Search", href: "/search" },
   { icon: Heart, label: "Saved", href: "/buyer/wishlist" },
   { icon: MessageSquare, label: "Chat", href: "/buyer/chat" },
@@ -17,7 +17,7 @@ export function BuyerBottomNav() {
 
   return (
     <div className="lg:hidden fixed bottom-6 left-6 right-6 z-50">
-      <div className="bg-white/90 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] flex items-center justify-around px-2 py-2">
+      <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-[2.5rem] shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           return (

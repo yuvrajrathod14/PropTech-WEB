@@ -116,7 +116,7 @@ export function ImageCarousel({ images, className, aspectRatio = "video" }: Imag
             variant="secondary"
             size="icon"
             onClick={() => paginate(-1)}
-            className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900 border-none"
+            className="w-12 h-12 rounded-2xl bg-white/95 shadow-xl hover:bg-white text-slate-900 border-none transition-all"
           >
             <ChevronLeft className="w-6 h-6" />
           </Button>
@@ -124,7 +124,7 @@ export function ImageCarousel({ images, className, aspectRatio = "video" }: Imag
             variant="secondary"
             size="icon"
             onClick={() => paginate(1)}
-            className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white text-slate-900 border-none"
+            className="w-12 h-12 rounded-2xl bg-white/95 shadow-xl hover:bg-white text-slate-900 border-none transition-all"
           >
             <ChevronRight className="w-6 h-6" />
           </Button>

@@ -3,35 +3,40 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
-export async function sendMessage(enquiryId: string, message: string, mediaUrl?: string) {
+export async function sendMessage(conversationId: string, content: string, mediaUrl?: string) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Unauthorized")
 
-  const { error } = await supabase.from("chat_messages").insert({
-    enquiry_id: enquiryId,
+  const { error } = await (supabase.from("messages") as any).insert({
+    conversation_id: conversationId,
     sender_id: user.id,
-    message,
-    media_url: mediaUrl || null,
+    content,
+    // media_url removed if not in schema, content is the main field
   })
 
   if (error) throw error
   
-  // Update enquiry timestamp
-  await supabase.from("enquiries").update({ updated_at: new Date().toISOString() }).eq("id", enquiryId)
+  // Update conversation timestamp and last message
+  await (supabase.from("conversations") as any)
+    .update({ 
+      last_message: content,
+      updated_at: new Date().toISOString() 
+    })
+    .eq("id", conversationId)
   
-  revalidatePath(`/chat/${enquiryId}`)
+  revalidatePath(`/buyer/chat`)
+  revalidatePath(`/owner/chat`)
 }
 
-export async function markRead(enquiryId: string) {
+export async function markRead(conversationId: string) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  await supabase
-    .from("chat_messages")
+  await (supabase.from("messages") as any)
     .update({ is_read: true })
-    .eq("enquiry_id", enquiryId)
+    .eq("conversation_id", conversationId)
     .neq("sender_id", user.id)
     .eq("is_read", false)
 }

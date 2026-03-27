@@ -21,6 +21,11 @@ import {
   BarChart3,
   List,
   Calendar,
+  Instagram,
+  Twitter,
+  Facebook,
+  Linkedin,
+  ChevronRight,
 } from "lucide-react"
 import { 
   DropdownMenu, 
@@ -47,7 +52,7 @@ export function Navbar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { user, loading } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const supabase = createClient()
 
   const [unreadCount, setUnreadCount] = useState(0)
@@ -120,16 +125,15 @@ export function Navbar() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    window.location.reload()
+    await signOut()
   }
 
   return (
     <nav
       className={cn(
-        "fixed left-0 right-0 z-50 transition-all duration-500",
+        "fixed left-0 right-0 z-50 transition-[top,margin,padding,background-color,border-radius] duration-300",
         scrolled 
-          ? "top-4 mx-4 md:mx-auto max-w-6xl rounded-[2rem] bg-white/70 backdrop-blur-xl border border-white/20 py-3 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)]" 
+          ? "top-4 mx-4 md:mx-auto max-w-6xl rounded-[2rem] bg-white/90 backdrop-blur-sm border border-white/40 py-3 shadow-[0_8px_32px_0_rgba(31,38,135,0.05)]" 
           : "top-0 bg-transparent border-transparent py-6"
       )}
     >
@@ -157,9 +161,8 @@ export function Navbar() {
             >
               {link.name}
               {pathname === link.href && (
-                <motion.div 
-                  layoutId="nav-underline"
-                  className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full"
+                <div 
+                  className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(26,86,219,0.3)]"
                 />
               )}
             </Link>
@@ -347,57 +350,144 @@ export function Navbar() {
 
         {/* Mobile Toggle */}
         <button
-          className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-600 hover:text-primary transition-colors"
+          className="md:hidden w-11 h-11 flex items-center justify-center rounded-2xl bg-white/90 text-slate-900 border border-slate-100 shadow-sm hover:text-primary transition-transform active:scale-90 z-[60]"
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            className="absolute top-[calc(100%+12px)] left-0 right-0 mx-4 bg-white/90 backdrop-blur-xl border border-white/20 rounded-[2rem] shadow-2xl md:hidden p-8 space-y-6"
-          >
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={cn(
-                  "block text-xl font-black transition-all",
-                  pathname === link.href ? "text-primary translate-x-2" : "text-slate-600 hover:translate-x-2"
-                )}
-                onClick={() => setIsOpen(false)}
-              >
-                {link.name}
-              </Link>
-            ))}
-            <div className="pt-6 flex flex-col space-y-4 border-t border-slate-100">
-              {user ? (
-                <Link href="/buyer/dashboard" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full justify-center h-14 rounded-2xl font-bold border-slate-200">
-                    Dashboard
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full justify-center h-14 rounded-2xl font-bold border-slate-200">
-                    Sign In
-                  </Button>
-                </Link>
-              )}
-              <Link href="/owner/post" onClick={() => setIsOpen(false)}>
-                <Button className="w-full justify-center h-14 rounded-2xl font-black bg-primary hover:bg-primary-dark shadow-xl shadow-primary/20">
-                  <PlusCircle className="w-5 h-5 mr-3" />
-                  List Property
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] md:hidden"
+            />
+            
+            {/* Drawer Content */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-[400px] bg-white z-[58] md:hidden shadow-[-20px_0_60px_-15px_rgba(0,0,0,0.1)] flex flex-col"
+            >
+              <div className="p-8 flex-1 overflow-y-auto">
+                <div className="flex items-center justify-between mb-12">
+                   <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                        <Home className="text-white w-5 h-5" />
+                      </div>
+                      <span className="text-xl font-black tracking-tighter text-primary">
+                        Prop<span className="text-slate-900">Tech</span>
+                      </span>
+                   </Link>
+                </div>
+
+                <div className="space-y-1">
+                  {navLinks.map((link, i) => (
+                    <motion.div
+                      key={link.name}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                    >
+                      <Link
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className={cn(
+                          "flex items-center justify-between p-4 rounded-2xl text-lg font-black transition-all group",
+                          pathname === link.href 
+                            ? "bg-primary/5 text-primary" 
+                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        )}
+                      >
+                        {link.name}
+                        <ChevronRight className={cn(
+                          "w-5 h-5 transition-transform group-hover:translate-x-1",
+                          pathname === link.href ? "opacity-100" : "opacity-0"
+                        )} />
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="mt-12 pt-12 border-t border-slate-50 space-y-6">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Account</p>
+                  {user ? (
+                    <div className="space-y-3">
+                         <div className="flex items-center gap-4 px-4 mb-6">
+                            <Avatar className="h-14 w-14 border-4 border-slate-50 shadow-xl">
+                              <AvatarImage src={user.user_metadata?.avatar_url} />
+                              <AvatarFallback className="bg-slate-100 text-slate-600 font-bold">
+                                {user.email?.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="text-lg font-black text-slate-900">{user.user_metadata?.full_name || "User"}</p>
+                                <p className="text-xs font-bold text-slate-400">{user.email}</p>
+                            </div>
+                         </div>
+                         <Link 
+                            href={user.user_metadata?.role === 'owner' ? "/owner/dashboard" : "/buyer/profile"} 
+                            onClick={() => setIsOpen(false)}
+                            className="block"
+                         >
+                            <Button className="w-full h-14 rounded-2xl font-black text-lg bg-primary shadow-xl shadow-primary/20">
+                                View Dashboard
+                            </Button>
+                         </Link>
+                         <Button 
+                            variant="ghost" 
+                            onClick={handleLogout}
+                            className="w-full h-14 rounded-2xl font-black text-destructive hover:bg-destructive/5 hover:text-destructive"
+                         >
+                            <LogOut className="w-5 h-5 mr-3" />
+                            Sign Out
+                         </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      <Link href="/login" onClick={() => setIsOpen(false)}>
+                        <Button variant="outline" className="w-full h-14 rounded-2xl font-black text-lg border-2 border-slate-100">
+                          Sign In
+                        </Button>
+                      </Link>
+                      <Link href="/register" onClick={() => setIsOpen(false)}>
+                        <Button className="w-full h-14 rounded-2xl font-black text-lg bg-primary shadow-xl shadow-primary/20">
+                          Join PropTech
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Socials & Legal */}
+              <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-8">
+                  <div className="flex items-center justify-center gap-6">
+                      {[Instagram, Twitter, Facebook, Linkedin].map((Icon, i) => (
+                        <a key={i} href="#" className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all">
+                          <Icon className="w-5 h-5" />
+                        </a>
+                      ))}
+                  </div>
+                  <div className="text-center space-y-2">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2024 PropTech India</p>
+                      <div className="flex justify-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          <Link href="/terms" onClick={() => setIsOpen(false)}>Terms</Link>
+                          <Link href="/shared" onClick={() => setIsOpen(false)}>Privacy</Link>
+                      </div>
+                  </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </nav>

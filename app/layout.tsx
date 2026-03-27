@@ -6,6 +6,8 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { CookieConsent } from "@/components/shared/cookie-consent";
 import { ScrollToTop } from "@/components/shared/scroll-to-top";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
+import { ConnectivityMonitor } from "@/components/shared/connectivity-monitor";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,7 +34,9 @@ export default function RootLayout({
             {children}
             <CookieConsent />
             <ScrollToTop />
+            <ConnectivityMonitor />
             <Toaster />
+            <SonnerToaster position="top-center" richColors />
           </AuthProvider>
         </ThemeProvider>
       </body>

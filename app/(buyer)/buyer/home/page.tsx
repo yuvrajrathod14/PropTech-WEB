@@ -45,9 +45,9 @@ export default function BuyerHomePage() {
         // Parallel stats fetching
         const [wishlistRes, enquiriesRes, visitsRes, bookingsRes, propsRes] = await Promise.all([
           supabase.from("wishlist").select("id", { count: "exact" }).eq("user_id", user.id),
-          (supabase.from("enquiries") as any).select("id", { count: "exact" }).eq("user_id", user.id),
+          (supabase.from("enquiries") as any).select("id", { count: "exact" }).eq("sender_id", user.id),
           (supabase.from("site_visits") as any).select("id", { count: "exact" }).eq("user_id", user.id),
-          (supabase.from("bookings") as any).select("id", { count: "exact" }).eq("user_id", user.id),
+          (supabase.from("bookings") as any).select("id", { count: "exact" }).eq("buyer_id", user.id),
           supabase.from("properties").select("*").limit(4)
         ])
 

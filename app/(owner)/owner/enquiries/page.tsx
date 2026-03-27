@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { 
   MessageSquare, 
   Search, 
@@ -14,7 +14,8 @@ import {
   MessageCircle,
   Trash2,
   Archive,
-  Sparkles
+  Sparkles,
+  Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,18 +30,102 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { GridRowSkeleton } from "@/components/ui/skeleton"
-
-const mockEnquiries = [
-  { id: "1", name: "Aryan Kumar", property: "Luxury Villa in Shela", msg: "I'm interested in the 3BHK. Is the price negotiable? I would like to visit this Saturday.", time: "2h ago", status: "New", phone: "+91 98*** **450", email: "ary***@example.com" },
-  { id: "2", name: "Rahul Mehta", property: "3 BHK Apartment, Science City", msg: "Can we schedule a visit this weekend at 11 AM? Also, let me know about the parking situation.", time: "5h ago", status: "Read", phone: "+91 87*** **123", email: "rah***@example.com" },
-  { id: "3", name: "Sonal Patel", property: "Commercial Plot, SG Highway", msg: "Does this include 2 parking spaces? Also, what is the exact frontage on the main road?", time: "1d ago", status: "Replied", phone: "+91 76*** **890", email: "son***@example.com" },
-  { id: "4", name: "Anish Shah", property: "Office in Prahlad Nagar", msg: "What is the maintenance cost per month? Is there a separate cafeteria in the building?", time: "2d ago", status: "Read", phone: "+91 99*** **567", email: "ani***@example.com" },
-  { id: "5", name: "Priya Varma", property: "Modern Flat in Bopal", msg: "Is this property RERA registered? When can we expect possession?", time: "3d ago", status: "New", phone: "+91 91*** **234", email: "pri***@example.com" },
-]
+import { createClient } from "@/lib/supabase/client"
+import Link from "next/link"
 
 export default function EnquiriesPage() {
+  const supabase = createClient()
   const [searchQuery, setSearchQuery] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [enquiries, setEnquiries] = useState<any[]>([])
+  const [statusFilter, setStatusFilter] = useState("All")
+  const [stats, setStats] = useState({ total: 0, newCount: 0, read: 0, replied: 0 })
+
+  useEffect(() => {
+    async function fetchEnquiries() {
+      setIsLoading(true)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // Fetch all enquiries for owner's properties
+        const { data: ownerProps } = await (supabase.from("properties") as any)
+          .select("id, title")
+          .eq("owner_id", user.id)
+
+        const propIds = (ownerProps || []).map((p: any) => p.id)
+        const propMap = Object.fromEntries((ownerProps || []).map((p: any) => [p.id, p.title]))
+
+        if (propIds.length === 0) {
+          setEnquiries([])
+          setIsLoading(false)
+          return
+        }
+
+        const { data: enqs, error } = await (supabase.from("enquiries") as any)
+          .select("*, sender:sender_id(full_name, email, phone)")
+          .in("property_id", propIds)
+          .order("created_at", { ascending: false })
+
+        if (error) throw error
+
+        const enriched = (enqs || []).map((e: any) => ({
+          ...e,
+          property_title: propMap[e.property_id] || "Unknown Property"
+        }))
+
+        setEnquiries(enriched)
+
+        // Calculate stats
+        const total = enriched.length
+        const newCount = enriched.filter((e: any) => e.status === "new" || !e.status).length
+        const read = enriched.filter((e: any) => e.status === "read").length
+        const replied = enriched.filter((e: any) => e.status === "replied").length
+        setStats({ total, newCount, read, replied })
+      } catch (error) {
+        console.error("Error fetching enquiries:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchEnquiries()
+  }, [supabase])
+
+  // Filter logic
+  const filtered = enquiries.filter(e => {
+    const matchesSearch = searchQuery === "" || 
+      (e.sender?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (e.property_title || "").toLowerCase().includes(searchQuery.toLowerCase())
+    
+    const matchesStatus = statusFilter === "All" || 
+      (statusFilter === "New" && (e.status === "new" || !e.status)) ||
+      (statusFilter === "Read" && e.status === "read") ||
+      (statusFilter === "Replied" && e.status === "replied")
+
+    return matchesSearch && matchesStatus
+  })
+
+  const updateEnquiryStatus = async (enquiryId: string, newStatus: string) => {
+    try {
+      await (supabase.from("enquiries") as any)
+        .update({ status: newStatus })
+        .eq("id", enquiryId)
+      
+      setEnquiries(prev => prev.map(e => e.id === enquiryId ? { ...e, status: newStatus } : e))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const timeAgo = (date: string) => {
+    const now = new Date()
+    const then = new Date(date)
+    const diff = Math.floor((now.getTime() - then.getTime()) / 1000)
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    return `${Math.floor(diff / 86400)}d ago`
+  }
 
   return (
     <div className="space-y-8 pb-20">
@@ -53,9 +138,6 @@ export default function EnquiriesPage() {
         <div className="flex items-center gap-3">
           <Button variant="outline" className="h-12 rounded-2xl border-slate-100 bg-white font-bold gap-2">
             <Download className="w-4 h-4" /> Export
-          </Button>
-          <Button className="h-12 rounded-2xl bg-[#1A56DB] hover:bg-[#1A56DB]/90 text-white font-black gap-2 shadow-xl shadow-[#1A56DB]/20 transition-all active:scale-95 px-6 italic">
-            <Archive className="w-4 h-4" /> CRM Archive
           </Button>
         </div>
       </div>
@@ -80,17 +162,23 @@ export default function EnquiriesPage() {
                 <div className="space-y-4">
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Filter By Status</h4>
                     <div className="space-y-2">
-                        {["All", "New", "Read", "Replied", "Action Required"].map((f, i) => (
+                        {[
+                          { label: "All", count: stats.total },
+                          { label: "New", count: stats.newCount },
+                          { label: "Read", count: stats.read },
+                          { label: "Replied", count: stats.replied },
+                        ].map((f) => (
                             <button 
-                                key={i} 
+                                key={f.label} 
+                                onClick={() => setStatusFilter(f.label)}
                                 className={cn(
                                     "w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all",
-                                    i === 0 ? "bg-[#1A56DB]/5 text-[#1A56DB]" : "text-slate-500 hover:bg-slate-50"
+                                    statusFilter === f.label ? "bg-[#1A56DB]/5 text-[#1A56DB]" : "text-slate-500 hover:bg-slate-50"
                                 )}
                             >
-                                {f}
+                                {f.label}
                                 <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded-lg text-[10px]">
-                                    {i === 0 ? "45" : i === 1 ? "12" : "15"}
+                                    {f.count}
                                 </span>
                             </button>
                         ))}
@@ -101,12 +189,14 @@ export default function EnquiriesPage() {
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Performance</h4>
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-emerald-50 p-3 rounded-2xl text-center">
-                            <p className="text-xl font-black text-emerald-600 tracking-tight">85%</p>
+                            <p className="text-xl font-black text-emerald-600 tracking-tight">
+                              {stats.total > 0 ? Math.round(((stats.replied) / stats.total) * 100) : 0}%
+                            </p>
                             <p className="text-[8px] font-black text-emerald-500 uppercase">Response</p>
                         </div>
                         <div className="bg-blue-50 p-3 rounded-2xl text-center">
-                            <p className="text-xl font-black text-blue-600 tracking-tight">1.2h</p>
-                            <p className="text-[8px] font-black text-blue-500 uppercase">Avg Time</p>
+                            <p className="text-xl font-black text-blue-600 tracking-tight">{stats.total}</p>
+                            <p className="text-[8px] font-black text-blue-500 uppercase">Total</p>
                         </div>
                     </div>
                 </div>
@@ -118,9 +208,6 @@ export default function EnquiriesPage() {
                  </div>
                  <h4 className="text-lg font-black italic tracking-tight">AI Insights</h4>
                  <p className="text-white/60 text-xs font-medium leading-relaxed">Buyers who receive a reply within <span className="text-white font-bold">15 minutes</span> are 4x more likely to schedule a visit.</p>
-                 <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-black h-11 text-xs">
-                    View Sales Tips
-                 </Button>
             </div>
         </div>
 
@@ -128,7 +215,15 @@ export default function EnquiriesPage() {
         <div className="lg:col-span-3 space-y-4">
             {isLoading ? (
                 Array(5).fill(0).map((_, i) => <GridRowSkeleton key={i} />)
-            ) : mockEnquiries.map((enquiry) => (
+            ) : filtered.length === 0 ? (
+                <div className="bg-white rounded-[32px] p-20 text-center border border-slate-100">
+                    <MessageSquare className="w-16 h-16 text-slate-100 mx-auto mb-6" />
+                    <h3 className="text-2xl font-black text-slate-900 italic tracking-tight">No Enquiries Found</h3>
+                    <p className="text-slate-400 font-bold mt-2">
+                      {searchQuery || statusFilter !== "All" ? "Try adjusting your filters." : "When buyers enquire about your properties, they'll appear here."}
+                    </p>
+                </div>
+            ) : filtered.map((enquiry) => (
                 <div key={enquiry.id} className="bg-white rounded-[32px] border border-slate-100 shadow-sm hover:shadow-xl hover:border-[#1A56DB]/20 transition-all group overflow-hidden">
                     <div className="flex flex-col md:flex-row">
                         <div className="p-8 flex-1 space-y-6">
@@ -136,17 +231,22 @@ export default function EnquiriesPage() {
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-4">
                                     <Avatar className="w-14 h-14 border-4 border-slate-50 shadow-sm">
-                                        <AvatarFallback className="bg-[#1A56DB]/5 text-[#1A56DB] text-lg font-black">{enquiry.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                                        <AvatarFallback className="bg-[#1A56DB]/5 text-[#1A56DB] text-lg font-black">
+                                          {(enquiry.sender?.full_name || "U").split(' ').map((n: string) => n[0]).join('')}
+                                        </AvatarFallback>
                                     </Avatar>
                                     <div>
                                         <div className="flex items-center gap-3">
-                                            <h3 className="text-xl font-black text-slate-900 tracking-tight">{enquiry.name}</h3>
-                                            <Badge variant={enquiry.status === "New" ? "default" : enquiry.status === "Read" ? "draft" : "approved" as any} className="rounded-full font-black text-[9px] uppercase tracking-widest px-3 border-none shadow-none">
-                                                {enquiry.status}
+                                            <h3 className="text-xl font-black text-slate-900 tracking-tight">{enquiry.sender?.full_name || "Unknown"}</h3>
+                                            <Badge 
+                                              variant={(enquiry.status === "new" || !enquiry.status) ? "default" : enquiry.status === "read" ? "draft" as any : "approved" as any} 
+                                              className="rounded-full font-black text-[9px] uppercase tracking-widest px-3 border-none shadow-none"
+                                            >
+                                                {enquiry.status || "New"}
                                             </Badge>
                                         </div>
                                         <p className="text-xs font-bold text-slate-400 flex items-center mt-1 italic">
-                                            <Clock className="w-3.5 h-3.5 mr-1.5" /> Received {enquiry.time}
+                                            <Clock className="w-3.5 h-3.5 mr-1.5" /> Received {timeAgo(enquiry.created_at)}
                                         </p>
                                     </div>
                                 </div>
@@ -157,11 +257,11 @@ export default function EnquiriesPage() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 bg-white/80 backdrop-blur-md">
-                                        <DropdownMenuItem className="rounded-xl font-bold gap-2 px-3 py-2 cursor-pointer transition-colors focus:bg-slate-100">
-                                            <Archive className="w-4 h-4" /> Archive Enquiry
+                                        <DropdownMenuItem onClick={() => updateEnquiryStatus(enquiry.id, "read")} className="rounded-xl font-bold gap-2 px-3 py-2 cursor-pointer transition-colors focus:bg-slate-100">
+                                            <Archive className="w-4 h-4" /> Mark as Read
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="rounded-xl font-bold gap-2 px-3 py-2 text-red-500 cursor-pointer transition-colors focus:bg-red-50 focus:text-red-600">
-                                            <Trash2 className="w-4 h-4" /> Mark as Spam
+                                        <DropdownMenuItem onClick={() => updateEnquiryStatus(enquiry.id, "replied")} className="rounded-xl font-bold gap-2 px-3 py-2 cursor-pointer transition-colors focus:bg-slate-100">
+                                            <MessageCircle className="w-4 h-4" /> Mark as Replied
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -173,54 +273,52 @@ export default function EnquiriesPage() {
                                     <MessageSquare className="w-12 h-12" />
                                 </div>
                                 <p className="text-[10px] font-black text-[#1A56DB] uppercase tracking-widest mb-3">Enquired about:</p>
-                                <p className="text-sm font-black text-slate-900 group-hover:text-[#1A56DB] transition-colors cursor-pointer flex items-center gap-2 mb-4">
-                                    {enquiry.property}
-                                    <ArrowUpRight className="w-4 h-4" />
-                                </p>
+                                <Link href={`/owner/listings/${enquiry.property_id}`}>
+                                  <p className="text-sm font-black text-slate-900 group-hover:text-[#1A56DB] transition-colors cursor-pointer flex items-center gap-2 mb-4">
+                                      {enquiry.property_title}
+                                      <ArrowUpRight className="w-4 h-4" />
+                                  </p>
+                                </Link>
                                 <p className="text-sm text-slate-600 font-medium leading-relaxed italic">
-                                    &quot;{enquiry.msg}&quot;
+                                    &quot;{enquiry.message}&quot;
                                 </p>
                             </div>
 
                             {/* Actions */}
                             <div className="flex flex-wrap items-center gap-3 pt-2">
-                                <Button className="h-12 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl px-8 shadow-xl shadow-slate-200 transition-all flex-1 md:flex-none italic">
+                                <Button onClick={() => updateEnquiryStatus(enquiry.id, "replied")} className="h-12 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl px-8 shadow-xl shadow-slate-200 transition-all flex-1 md:flex-none italic">
                                     <MessageCircle className="w-4 h-4 mr-2" />
                                     Reply via Chat
                                 </Button>
-                                <Button variant="outline" className="h-12 rounded-2xl border-slate-100 font-bold px-6 gap-2 hover:bg-slate-50">
-                                    <Phone className="w-4 h-4 text-[#1A56DB]" /> Call Buyer
-                                </Button>
-                                <Button variant="outline" className="h-12 rounded-2xl border-slate-100 font-bold px-6 gap-2 hover:bg-slate-50">
-                                    <Mail className="w-4 h-4 text-[#1A56DB]" /> Email
-                                </Button>
+                                {enquiry.sender?.phone && (
+                                  <Button variant="outline" className="h-12 rounded-2xl border-slate-100 font-bold px-6 gap-2 hover:bg-slate-50">
+                                      <Phone className="w-4 h-4 text-[#1A56DB]" /> Call Buyer
+                                  </Button>
+                                )}
+                                {enquiry.sender?.email && (
+                                  <Button variant="outline" className="h-12 rounded-2xl border-slate-100 font-bold px-6 gap-2 hover:bg-slate-50">
+                                      <Mail className="w-4 h-4 text-[#1A56DB]" /> Email
+                                  </Button>
+                                )}
                             </div>
                         </div>
 
                         {/* Side Info */}
-                        <div className="bg-slate-50/30 border-l border-slate-50 w-full md:w-64 p-8 flex flex-col justify-center space-y-6">
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
-                                <p className="text-sm font-black text-slate-900">{enquiry.phone}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</p>
-                                <p className="text-sm font-black text-slate-900">{enquiry.email}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Preference</p>
-                                <Badge className="bg-white text-slate-900 border-slate-200 font-bold shadow-none rounded-lg px-2 text-[10px]">Wants a Call</Badge>
+                        <div className="bg-slate-50/50 border-t md:border-t-0 md:border-l border-slate-100 w-full md:w-64 p-8 flex flex-col justify-center space-y-6">
+                            <div className="grid grid-cols-2 md:grid-cols-1 gap-6">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Phone</p>
+                                    <p className="text-sm font-black text-slate-900 truncate">{enquiry.sender?.phone || "N/A"}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Email</p>
+                                    <p className="text-sm font-black text-slate-900 truncate">{enquiry.sender?.email || "N/A"}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             ))}
-
-            <div className="flex items-center justify-center pt-8">
-                 <Button variant="ghost" className="text-slate-400 font-black uppercase text-xs tracking-widest gap-2 hover:text-[#1A56DB] transition-all">
-                    Load More Enquiries <ChevronRight className="w-4 h-4" />
-                 </Button>
-            </div>
         </div>
       </div>
     </div>

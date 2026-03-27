@@ -39,9 +39,9 @@ export function ScrollToTop() {
         >
           <Button
             onClick={scrollToTop}
-            className="w-14 h-14 rounded-2xl bg-white text-slate-900 border-2 border-slate-100 shadow-2xl shadow-slate-200 hover:bg-blue-600 hover:text-white transition-all group active:scale-95"
+            className="w-14 h-14 rounded-full bg-[#1A56DB] text-white shadow-2xl shadow-[#1A56DB]/40 border-none hover:bg-[#1A56DB]/90 hover:scale-110 transition-all group active:scale-95"
           >
-            <ChevronUp className="w-6 h-6 group-hover:animate-bounce" />
+            <ChevronUp className="w-6 h-6 transition-transform group-hover:-translate-y-1" />
           </Button>
         </motion.div>
       )}

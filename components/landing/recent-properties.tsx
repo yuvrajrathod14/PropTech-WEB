@@ -11,13 +11,15 @@ import Link from "next/link"
 
 const filters = ["All", "Buy", "Rent"]
 
-export function RecentProperties() {
+export function RecentProperties({ initialProperties }: { initialProperties?: any[] }) {
   const supabase = createClient()
   const [filter, setFilter] = useState("All")
-  const [properties, setProperties] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [properties, setProperties] = useState<any[]>(initialProperties || [])
+  const [loading, setLoading] = useState(!initialProperties)
 
   useEffect(() => {
+    if (initialProperties && filter === "All" && properties.length > 0) return
+
     async function fetchRecent() {
       setLoading(true)
       try {
@@ -40,7 +42,7 @@ export function RecentProperties() {
       }
     }
     fetchRecent()
-  }, [filter, supabase])
+  }, [filter, supabase, initialProperties])
 
   return (
     <section className="py-24 bg-white relative">

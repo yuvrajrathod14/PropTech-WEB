@@ -16,13 +16,13 @@ import {
 } from "lucide-react"
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/home" },
-  { icon: Heart, label: "Saved Properties", href: "/wishlist" },
-  { icon: ShoppingBag, label: "My Bookings", href: "/bookings" },
-  { icon: MapPin, label: "Site Visits", href: "/visits" },
-  { icon: MessageSquare, label: "Enquiries", href: "/chat" },
-  { icon: Bell, label: "Notifications", href: "/notifications" },
-  { icon: User, label: "My Profile", href: "/profile" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/buyer/home" },
+  { icon: Heart, label: "Saved Properties", href: "/buyer/wishlist" },
+  { icon: ShoppingBag, label: "My Bookings", href: "/buyer/bookings" },
+  { icon: MapPin, label: "Site Visits", href: "/buyer/visits" },
+  { icon: MessageSquare, label: "Enquiries", href: "/buyer/chat" },
+  { icon: Bell, label: "Notifications", href: "/buyer/notifications" },
+  { icon: User, label: "My Profile", href: "/buyer/profile" },
 ]
 
 import { useAuth } from "@/hooks/use-auth"

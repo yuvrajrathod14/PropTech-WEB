@@ -100,11 +100,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // Fetch Profile for Role & Blocked status (Rule 2, 3, 4)
-  const { data: profile } = await supabase
+  // Optimization: Use metadata for role if available, but always check is_blocked for security
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role, is_blocked")
     .eq("id", session.user.id)
     .single();
+
+  if (profileError && profileError.code !== 'PGRST116') {
+      console.error("Middleware profile error:", profileError);
+  }
 
   const userRole = profile?.role || session.user.user_metadata?.role || "buyer";
   const isBlocked = profile?.is_blocked || false;

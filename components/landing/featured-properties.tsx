@@ -9,12 +9,14 @@ import { createClient } from "@/lib/supabase/client"
 import { PropertyCardSkeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 
-export function FeaturedProperties() {
+export function FeaturedProperties({ initialProperties }: { initialProperties?: any[] }) {
   const supabase = createClient()
-  const [properties, setProperties] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [properties, setProperties] = useState<any[]>(initialProperties || [])
+  const [loading, setLoading] = useState(!initialProperties)
 
   useEffect(() => {
+    if (initialProperties && properties.length > 0) return
+
     async function fetchFeatured() {
       setLoading(true)
       try {
@@ -32,7 +34,7 @@ export function FeaturedProperties() {
       }
     }
     fetchFeatured()
-  }, [supabase])
+  }, [supabase, initialProperties])
 
   return (
     <section className="py-24 bg-slate-50 relative overflow-hidden">
@@ -72,16 +74,12 @@ export function FeaturedProperties() {
               ))
             ) : properties.length > 0 ? (
               properties.map((property, index) => (
-                <motion.div
+                <div
                   key={property.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
                   className="min-w-[300px] md:min-w-[380px]"
                 >
                   <PropertyCard property={property} />
-                </motion.div>
+                </div>
               ))
             ) : (
               <div className="w-full flex flex-col items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-slate-200">

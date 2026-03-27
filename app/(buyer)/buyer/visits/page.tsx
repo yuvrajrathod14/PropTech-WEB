@@ -99,15 +99,15 @@ export default function BuyerVisitsPage() {
                     </div>
 
                     <div className="p-8 flex-1 flex flex-col justify-between gap-6">
-                      <div className="space-y-2">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none italic">{visit.property?.property_name}</h3>
+                      <div className="space-y-4">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight italic">{visit.property?.property_name}</h3>
                         <div className="flex items-center text-slate-500 font-bold text-sm">
-                          <MapPin className="w-4 h-4 mr-2 text-primary" />
-                          {visit.property?.address}, {visit.property?.city}
+                          <MapPin className="w-4 h-4 mr-2 text-primary shrink-0" />
+                          <span className="truncate">{visit.property?.address}, {visit.property?.city}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between border-t border-slate-50 pt-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-50 pt-4">
                         <div className="flex flex-col gap-1">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scheduled For</p>
                           <div className="flex items-center gap-2">
@@ -119,9 +119,9 @@ export default function BuyerVisitsPage() {
                         </div>
 
                         {visit.status === 'confirmed' && (
-                          <div className="flex items-center gap-2 text-emerald-500">
+                          <div className="flex items-center gap-2 text-emerald-500 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 w-fit">
                             <CheckCircle2 className="w-5 h-5" />
-                            <span className="font-black text-xs uppercase tracking-widest">Owner Confirmed</span>
+                            <span className="font-black text-[10px] uppercase tracking-widest leading-none">Owner Confirmed</span>
                           </div>
                         )}
                       </div>

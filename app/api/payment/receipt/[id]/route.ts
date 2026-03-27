@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-// import { renderToStream } from '@react-pdf/renderer'
-// Note: PDF generation often requires a component. 
-// For now, I'll return the booking data formatted for receipt.
 
 export async function GET(
   req: Request,
@@ -10,13 +7,24 @@ export async function GET(
 ) {
   try {
     const supabase = createClient()
-    const { data: booking, error } = await supabase
-      .from('bookings')
+
+    // 1. Auth check
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 2. Fetch booking with joins
+    const { data: booking, error } = await (supabase.from('bookings') as any)
       .select(`
         *,
-        property:properties (title),
-        buyer:profiles!bookings_buyer_id_fkey (full_name, email),
-        owner:profiles!bookings_owner_id_fkey (full_name)
+        property:property_id (
+          title,
+          locality,
+          city,
+          type,
+          owner_id
+        )
       `)
       .eq('id', params.id)
       .single()
@@ -25,16 +33,71 @@ export async function GET(
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
     }
 
-    // In a real app, we'd render the PDF component to a stream here.
-    // return new Response(stream, { headers: { 'Content-Type': 'application/pdf' } })
-    
-    return NextResponse.json({ 
-      receipt_id: booking.id,
-      amount: booking.amount,
-      status: booking.status,
-      property: booking.property?.title,
-      buyer: booking.buyer?.full_name,
-      date: booking.created_at
+    // 3. Authorization: must be buyer of this booking OR admin
+    const { data: profile } = await (supabase
+      .from('profiles') as any)
+      .select('role, full_name, email, phone')
+      .eq('id', user.id)
+      .single()
+
+    const isAdmin = profile?.role === 'admin'
+    const isBuyer = booking.buyer_id === user.id
+
+    if (!isAdmin && !isBuyer) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // 4. Fetch buyer profile if admin is viewing
+    let buyerProfile = profile
+    if (isAdmin && !isBuyer) {
+      const { data: bp } = await (supabase
+        .from('profiles') as any)
+        .select('full_name, email, phone')
+        .eq('id', booking.buyer_id)
+        .single()
+      buyerProfile = bp
+    }
+
+    // 5. Fetch owner profile
+    const { data: ownerProfile } = await (supabase
+      .from('profiles') as any)
+      .select('full_name')
+      .eq('id', booking.property?.owner_id)
+      .single()
+
+    // 6. Return formatted receipt
+    return NextResponse.json({
+      receipt: {
+        receipt_id: `PROPTECH-${booking.id.slice(0, 8).toUpperCase()}`,
+        booking_id: booking.id,
+        date: booking.created_at,
+        status: booking.status,
+        
+        property: {
+          title: booking.property?.title || 'N/A',
+          locality: booking.property?.locality || '',
+          city: booking.property?.city || '',
+          type: booking.property?.type || '',
+        },
+        
+        buyer: {
+          name: buyerProfile?.full_name || 'N/A',
+          email: buyerProfile?.email || '',
+          phone: buyerProfile?.phone || '',
+        },
+        
+        owner: {
+          name: ownerProfile?.full_name || 'N/A',
+        },
+        
+        payment: {
+          token_amount: booking.amount || 0,
+          platform_fee: booking.platform_fee || 0,
+          total_amount: booking.total_amount || (booking.amount + (booking.platform_fee || 0)),
+          razorpay_payment_id: booking.razorpay_payment_id || '',
+          razorpay_order_id: booking.razorpay_order_id || '',
+        }
+      }
     })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

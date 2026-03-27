@@ -60,6 +60,38 @@ export function TableRowSkeleton({ columns = 5 }: { columns?: number }) {
   )
 }
 
+export function BookingCardSkeleton() {
+  return (
+    <div className="bg-white p-6 rounded-[32px] border border-slate-100 animate-pulse">
+      <div className="flex flex-col md:flex-row gap-6">
+        <Skeleton className="w-full md:w-32 h-44 md:h-32 rounded-2xl shrink-0" />
+        <div className="flex-1 space-y-4 py-1">
+          <div className="flex items-start justify-between gap-4">
+            <Skeleton className="h-6 w-1/2 rounded-lg" />
+            <Skeleton className="h-6 w-20 rounded-xl" />
+          </div>
+          <Skeleton className="h-4 w-1/3 rounded-lg" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-slate-50 mt-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-3 w-12 rounded-lg opacity-40" />
+                <Skeleton className="h-4 w-20 rounded-lg" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 shrink-0 w-full lg:w-48">
+          <Skeleton className="h-12 w-full rounded-2xl" />
+          <div className="flex gap-2">
+            <Skeleton className="h-12 flex-1 rounded-2xl" />
+            <Skeleton className="h-12 w-12 rounded-2xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ChatMessageSkeleton({ align = "left" }: { align?: "left" | "right" }) {
   return (
     <div className={cn("flex w-full mb-4 animate-pulse", align === 'right' ? "justify-end" : "justify-start")}>

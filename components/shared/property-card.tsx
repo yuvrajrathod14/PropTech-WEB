@@ -62,10 +62,9 @@ export function PropertyCard({
 
   if (variant === "list") {
     return (
-      <motion.div
-        whileHover={{ y: -4 }}
+      <div
         className={cn(
-          "group bg-white rounded-[32px] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col md:flex-row h-full md:h-64",
+          "group bg-white rounded-[32px] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/50 transition-[transform,box-shadow,background-color,border-color] duration-300 flex flex-col md:flex-row h-full md:h-64 hover:-translate-y-1",
           className
         )}
       >
@@ -137,7 +136,7 @@ export function PropertyCard({
                 size="icon" 
                 onClick={handleWishlistClick}
                 className={cn(
-                  "w-12 h-12 rounded-2xl border-2 hover:bg-slate-50 group/heart transition-all",
+                  "w-12 h-12 rounded-2xl border-2 hover:bg-slate-50 group/heart transition-[background-color,border-color,transform]",
                   isWishlisted ? "bg-red-50 border-red-100" : "border-slate-100"
                 )}
              >
@@ -148,16 +147,16 @@ export function PropertyCard({
              </Button>
           </div>
         </div>
-      </motion.div>
+      </div>
     )
   }
 
   // Grid & Mini variants
   return (
-    <motion.div
-      whileHover={variant !== 'mini' ? { y: -8 } : {}}
+    <div
       className={cn(
-        "group bg-white border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 flex flex-col h-full",
+        "group bg-white border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/50 transition-[transform,box-shadow,border-color] duration-300 flex flex-col h-full",
+        variant !== 'mini' && "hover:-translate-y-2",
         variant === 'mini' ? 'rounded-2xl p-2' : 'rounded-[32px]',
         className
       )}
@@ -190,7 +189,7 @@ export function PropertyCard({
                 size="icon" 
                 onClick={handleWishlistClick}
                 className={cn(
-                  "w-10 h-10 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl hover:bg-white transition-all",
+                  "w-10 h-10 rounded-2xl bg-white/95 shadow-xl hover:bg-white transition-all",
                   isWishlisted ? "text-red-500" : "text-slate-900 hover:text-red-500"
                 )}
               >
@@ -248,13 +247,13 @@ export function PropertyCard({
           <Link href={`/property/${property.id}`}>
             <Button className={cn(
               "w-full font-black transition-all duration-300",
-              variant === 'mini' ? 'h-8 text-[10px] rounded-lg' : 'h-12 bg-slate-50 hover:bg-[#1A56DB] hover:text-white text-slate-900 shadow-sm rounded-2xl'
+              variant === 'mini' ? 'h-8 text-[10px] rounded-lg' : 'h-12 bg-slate-50 hover:bg-[#1A56DB] hover:text-white text-slate-900 shadow-sm rounded-2xl transition-[background-color,color,box-shadow]'
             )}>
               {variant === 'mini' ? 'View' : 'View Property'}
             </Button>
           </Link>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

@@ -54,28 +54,19 @@ export function PropertyTypeExplorer() {
             <Link 
               key={type.name} 
               href={`/search?type=${encodeURIComponent(type.name)}`}
-              className="block"
+              className="block group"
             >
-              <motion.div
-                initial={{ opacity: 1, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ 
-                  y: -5,
-                  borderColor: "hsl(var(--primary))",
-                  transition: { duration: 0.2 }
-                }}
-                className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer group transition-colors"
+              <div
+                className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:border-primary hover:bg-white hover:shadow-xl hover:shadow-primary/5"
               >
-                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
                   {type.icon}
                 </div>
-                <h3 className="font-bold text-slate-900 group-hover:text-primary transition-colors">{type.name}</h3>
+                <h3 className="font-bold text-slate-900 group-hover:text-primary transition-colors duration-300">{type.name}</h3>
                 <Badge variant="outline" className="mt-3 bg-white text-slate-500 font-semibold border-slate-100">
                   {type.count} listings
                 </Badge>
-              </motion.div>
+              </div>
             </Link>
           ))}
         </div>

@@ -4,27 +4,26 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/types'
 
-type Message = Database['public']['Tables']['chat_messages']['Row']
+type Message = Database['public']['Tables']['messages']['Row']
 
-export function useChat(enquiryId: string) {
+export function useChat(conversationId: string) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!enquiryId) return
+    if (!conversationId) return
 
     async function fetchMessages() {
       try {
         setLoading(true)
-        const { data, error: fetchError } = await supabase
-          .from('chat_messages')
+        const { data, error: fetchError } = await (supabase.from('messages') as any)
           .select('*')
-          .eq('enquiry_id', enquiryId)
+          .eq('conversation_id', conversationId)
           .order('created_at', { ascending: true })
 
         if (fetchError) throw fetchError
-        setMessages(data)
+        setMessages(data || [])
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -36,14 +35,14 @@ export function useChat(enquiryId: string) {
 
     // Realtime subscription
     const channel = supabase
-      .channel(`chat:${enquiryId}`)
+      .channel(`chat:${conversationId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'chat_messages',
-          filter: `enquiry_id=eq.${enquiryId}`,
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
           setMessages((prev) => [...prev, payload.new as Message])
@@ -54,18 +53,17 @@ export function useChat(enquiryId: string) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [enquiryId])
+  }, [conversationId])
 
-  const sendMessage = async (message: string, mediaUrl?: string) => {
+  const sendMessage = async (content: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
-      const { error } = await supabase.from('chat_messages').insert({
-        enquiry_id: enquiryId,
+      const { error } = await (supabase.from('messages') as any).insert({
+        conversation_id: conversationId,
         sender_id: user.id,
-        message,
-        media_url: mediaUrl || null,
+        content,
       })
 
       if (error) throw error

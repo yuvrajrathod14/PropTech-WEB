@@ -116,7 +116,7 @@ export default function AdminListingsPage() {
 
 
   const filteredListings = listings.filter(item => 
-    (item.property_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
     (item.profiles?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -208,7 +208,7 @@ export default function AdminListingsPage() {
                         <div className="col-span-4 min-w-0">
                             <Link href={`/property/${listing.id}`}>
                               <h4 className="text-base font-black text-slate-900 truncate tracking-tight group-hover:text-[#1A56DB] transition-colors cursor-pointer flex items-center gap-2">
-                                  {listing.property_name || 'Untitled'}
+                                  {listing.title || 'Untitled'}
                                   <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </h4>
                             </Link>
@@ -226,7 +226,7 @@ export default function AdminListingsPage() {
                         </div>
   
                         <div className="col-span-2">
-                            <Badge variant={listing.status?.toLowerCase() as any} className="rounded-full font-black text-[9px] uppercase tracking-widest px-3 border-none shadow-none">
+                            <Badge variant={(listing.status?.toLowerCase() || 'draft') as any} className="rounded-full font-black text-[9px] uppercase tracking-widest px-3 border-none shadow-none">
                                 {listing.status || 'Draft'}
                             </Badge>
                         </div>

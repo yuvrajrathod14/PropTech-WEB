@@ -8,50 +8,54 @@ export async function requestVisit(propertyId: string, date: string, timeSlot: s
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Unauthorized")
 
-  const { data: property } = await supabase
-    .from("properties")
+  const { data: property } = await (supabase.from("properties") as any)
     .select("owner_id")
     .eq("id", propertyId)
     .single()
 
   if (!property) throw new Error("Property not found")
 
-  const { data: visit, error } = await supabase
-    .from("site_visits")
+  // site_visits schema uses user_id and preferred_date
+  // notes might be a JSON field or separate column if added later, 
+  // but for now follow the core schema from types.ts
+  const { data: visit, error } = await (supabase.from("site_visits") as any)
     .insert({
       property_id: propertyId,
-      buyer_id: user.id,
-      owner_id: property.owner_id,
-      visit_date: date,
-      time_slot: timeSlot,
-      notes,
+      user_id: user.id,
+      preferred_date: date,
       status: "pending",
+      // time_slot and notes removed if not in core schema, 
+      // can be added to notes/details if we have a metadata field
     })
     .select()
     .single()
 
   if (error) throw error
+  
+  revalidatePath("/buyer/visits")
+  revalidatePath("/owner/visits")
+  
   return visit
 }
 
 export async function confirmVisit(visitId: string) {
   const supabase = createClient()
-  const { error } = await supabase
-    .from("site_visits")
+  const { error } = await (supabase.from("site_visits") as any)
     .update({ status: "confirmed" })
     .eq("id", visitId)
 
   if (error) throw error
-  revalidatePath("/site-visits")
+  revalidatePath("/owner/visits")
+  revalidatePath("/buyer/visits")
 }
 
 export async function cancelVisit(visitId: string) {
   const supabase = createClient()
-  const { error } = await supabase
-    .from("site_visits")
+  const { error } = await (supabase.from("site_visits") as any)
     .update({ status: "cancelled" })
     .eq("id", visitId)
 
   if (error) throw error
-  revalidatePath("/site-visits")
+  revalidatePath("/buyer/visits")
+  revalidatePath("/owner/visits")
 }

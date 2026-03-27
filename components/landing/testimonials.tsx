@@ -53,13 +53,9 @@ export function Testimonials() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((t, index) => (
-            <motion.div
+            <div
               key={t.name}
-              initial={{ opacity: 1, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-slate-50/50 rounded-3xl p-8 border border-slate-100 flex flex-col items-center text-center space-y-6 relative"
+              className="bg-slate-50/50 rounded-3xl p-8 border border-slate-100 flex flex-col items-center text-center space-y-6 relative transition-all duration-300 hover:bg-white hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1"
             >
               <Quote className="absolute top-8 left-8 w-12 h-12 text-primary/5 -z-10" />
               
@@ -81,7 +77,7 @@ export function Testimonials() {
                   <p className="text-xs font-bold text-primary uppercase tracking-widest">{t.city}</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 

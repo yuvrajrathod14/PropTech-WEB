@@ -26,8 +26,8 @@ export function useNotifications() {
           .order('created_at', { ascending: false })
 
         if (fetchError) throw fetchError
-        setNotifications(data)
-        setUnreadCount(data.filter(n => !n.is_read).length)
+        setNotifications(data || [])
+        setUnreadCount((data as any[]).filter((n: any) => !n.is_read).length)
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -69,10 +69,13 @@ export function useNotifications() {
   }, [])
 
   const markAsRead = async (id: string) => {
-    const { error } = await supabase
-      .from('notifications')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { error } = await (supabase
+      .from("notifications") as any)
       .update({ is_read: true })
-      .eq('id', id)
+      .eq("id", id) // Kept original logic for `id` based update, as `user.id` was not in scope and would change function's intent.
     
     if (!error) {
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))

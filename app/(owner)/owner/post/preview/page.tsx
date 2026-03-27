@@ -193,19 +193,19 @@ export default function PostStep6() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-12 mt-auto">
+      <div className="fixed md:relative bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-md md:bg-transparent border-t md:border-none border-slate-100 z-50 flex items-center justify-between mt-auto">
         <Button 
           variant="ghost" 
           onClick={() => router.push("/owner/post/pricing")} 
-          className="font-black text-slate-500 hover:text-primary rounded-xl h-14 px-8 gap-2"
+          className="font-black text-slate-500 hover:text-primary rounded-xl h-14 px-4 md:px-8 gap-2"
         >
           <ChevronLeft className="w-5 h-5" />
-          Back
+          <span className="hidden md:inline">Back</span>
         </Button>
         <Button 
           onClick={handleSubmit} 
           disabled={isSubmitting}
-          className="bg-primary hover:bg-primary/90 text-white font-black h-14 px-10 rounded-2xl gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95 animate-shimmer disabled:opacity-50"
+          className="bg-primary hover:bg-primary/90 text-white font-black h-14 px-8 md:px-10 rounded-2xl gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95 animate-shimmer disabled:opacity-50 flex-1 md:flex-none"
         >
           {isSubmitting ? (
             <>

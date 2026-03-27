@@ -52,22 +52,18 @@ export function WhyChooseUs() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (
-            <motion.div
+            <div
               key={feature.title}
-              initial={{ opacity: 1, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col items-center text-center space-y-6"
+              className="bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col items-center text-center space-y-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/5"
             >
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                 {feature.icon}
               </div>
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-slate-900">{feature.title}</h3>
                 <p className="text-slate-500 text-sm leading-relaxed">{feature.desc}</p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

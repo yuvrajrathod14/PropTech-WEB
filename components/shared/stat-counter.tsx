@@ -1,7 +1,5 @@
-"use client"
-
-import { useEffect, useState, useRef } from "react"
-import { useInView, animate } from "framer-motion"
+import { useEffect, useRef } from "react"
+import { useInView, animate, useMotionValue, useTransform, motion } from "framer-motion"
 
 interface StatCounterProps {
   value: number
@@ -12,20 +10,20 @@ interface StatCounterProps {
 }
 
 export function StatCounter({ value, suffix = "", prefix = "", label, icon }: StatCounterProps) {
-  const [count, setCount] = useState(0)
+  const count = useMotionValue(0)
+  const rounded = useTransform(count, (latest) => Math.floor(latest).toLocaleString())
   const nodeRef = useRef(null)
   const isInView = useInView(nodeRef, { once: true, margin: "0px" })
 
   useEffect(() => {
     if (isInView) {
-      const controls = animate(0, value, {
+      const controls = animate(count, value, {
         duration: 2,
-        onUpdate: (latest) => setCount(Math.floor(latest)),
         ease: "easeOut",
       })
       return () => controls.stop()
     }
-  }, [isInView, value])
+  }, [isInView, value, count])
 
   return (
     <div ref={nodeRef} className="flex items-center space-x-4">
@@ -33,9 +31,11 @@ export function StatCounter({ value, suffix = "", prefix = "", label, icon }: St
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-black text-slate-900 flex items-center">
-          {prefix}{count.toLocaleString()}{suffix}
-        </p>
+        <div className="text-2xl font-black text-slate-900 flex items-center">
+          {prefix}
+          <motion.span>{rounded}</motion.span>
+          {suffix}
+        </div>
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</p>
       </div>
     </div>

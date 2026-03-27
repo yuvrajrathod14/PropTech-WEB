@@ -99,10 +99,8 @@ export function Hero() {
             transition={{ duration: 0.8 }}
             className="absolute top-0 right-0 z-10"
           >
-            <motion.div
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="w-[320px]"
+            <div
+              className="w-[320px] transition-transform duration-500 hover:-translate-y-2"
             >
               <PropertyCard
                 property={{
@@ -120,12 +118,12 @@ export function Hero() {
                 }}
                 className="shadow-2xl shadow-primary/10 border-none"
               />
-            </motion.div>
+            </div>
           </motion.div>
 
-          {/* Decorative Elements */}
-          <div className="absolute top-40 right-40 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-10"></div>
-          <div className="absolute bottom-10 right-10 w-48 h-48 bg-success/10 rounded-full blur-3xl -z-10"></div>
+          {/* Decorative Elements - Simplified */}
+          <div className="absolute top-40 right-40 w-64 h-64 bg-primary/5 rounded-full -z-10"></div>
+          <div className="absolute bottom-10 right-10 w-48 h-48 bg-success/5 rounded-full -z-10"></div>
         </div>
       </div>
 

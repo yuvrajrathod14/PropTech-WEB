@@ -112,11 +112,11 @@ export default function PostStep1() {
         </div>
       </div>
 
-      <div className="flex items-center justify-end pt-12 mt-auto">
+      <div className="fixed md:relative bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-md md:bg-transparent border-t md:border-none border-slate-100 z-50 flex items-center justify-end mt-auto">
         <Button 
           onClick={handleNext} 
           disabled={isDraftLoading || isInitializing}
-          className="bg-slate-900 hover:bg-slate-800 text-white font-black h-14 px-10 rounded-2xl gap-2 shadow-xl shadow-slate-200 transition-all active:scale-95 disabled:opacity-50"
+          className="bg-slate-900 hover:bg-slate-800 text-white font-black h-14 px-8 md:px-10 rounded-2xl gap-2 shadow-xl shadow-slate-200 transition-all active:scale-95 disabled:opacity-50 w-full md:w-auto"
         >
           {isDraftLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Continue"}
           {!isDraftLoading && <ChevronRight className="w-5 h-5" />}

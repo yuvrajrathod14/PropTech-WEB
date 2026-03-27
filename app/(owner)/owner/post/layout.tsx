@@ -22,7 +22,7 @@ export default function PostPropertyLayout({ children }: { children: React.React
   const currentStep = currentStepIndex > 0 ? currentStepIndex : 1
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 pb-20">
+    <div className="max-w-5xl mx-auto space-y-8 pb-32 md:pb-20">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -36,30 +36,42 @@ export default function PostPropertyLayout({ children }: { children: React.React
       </div>
 
       {/* Stepper */}
-      <div className="relative flex justify-between items-center px-4 max-w-3xl mx-auto">
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-100 -z-10 -translate-y-1/2" />
+      <div className="relative flex justify-between items-center px-4 max-w-3xl mx-auto md:px-0">
+        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-100 -z-10 -translate-y-1/2 hidden md:block" />
         {steps.map((step) => (
-          <div key={step.id} className="relative flex flex-col items-center gap-2">
+          <div key={step.id} className={cn(
+            "relative flex flex-col items-center gap-2",
+            currentStep !== step.id && "hidden md:flex"
+          )}>
             <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border-4 border-white shadow-xl",
+              "w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border-4 border-white shadow-xl",
               currentStep === step.id ? "bg-primary text-white scale-110 shadow-primary/20 ring-4 ring-primary/5" : 
               currentStep > step.id ? "bg-emerald-500 text-white" : "bg-white text-slate-400"
             )}>
-              {currentStep > step.id ? <CheckCircle2 className="w-6 h-6" /> : <step.icon className="w-5 h-5" />}
+              {currentStep > step.id ? <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" /> : <step.icon className="w-4 h-4 md:w-5 md:h-5" />}
             </div>
             <span className={cn(
-              "text-[10px] font-black uppercase tracking-widest transition-colors hidden sm:block",
+              "text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-colors",
               currentStep === step.id ? "text-primary" : "text-slate-400"
             )}>
               {step.title}
+              <span className="md:hidden ml-1 opacity-50">• Step {currentStep} of {steps.length}</span>
             </span>
           </div>
         ))}
+        {/* Simple Progress Bar for Mobile */}
+        <div className="md:hidden absolute -bottom-4 left-4 right-4 h-1 bg-slate-100 rounded-full overflow-hidden">
+            <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${(currentStep / steps.length) * 100}%` }}
+                className="h-full bg-primary"
+            />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
         <div className="lg:col-span-3">
-          <Card className="border-none shadow-sm rounded-[32px] p-8 md:p-10 min-h-[600px] flex flex-col">
+          <Card className="border-none shadow-sm rounded-[32px] p-6 md:p-10 min-h-[500px] md:min-h-[600px] flex flex-col">
             {children}
           </Card>
         </div>

@@ -16,9 +16,11 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { PropertyCardSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
+import { useRouter } from "next/navigation"
 
 export default function WishlistPage() {
   const supabase = createClient()
+  const router = useRouter()
   const [items, setItems] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [removedItem, setRemovedItem] = useState<any | null>(null)
@@ -142,7 +144,7 @@ export default function WishlistPage() {
                 <PropertyCard property={property} />
                 <button
                   onClick={() => handleRemove(property.id)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center text-slate-400 hover:text-[#EF4444] hover:scale-110 transition-all z-20 opacity-0 group-hover:opacity-100"
+                  className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center text-slate-400 hover:text-[#EF4444] hover:scale-110 transition-all z-20 md:opacity-0 group-hover:opacity-100"
                   title="Remove from wishlist"
                 >
                   <Trash2 className="w-5 h-5" />

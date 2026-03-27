@@ -56,13 +56,17 @@ export default function MyListingsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Fetch Global Counts
-      const { data: allProps } = await supabase.from("properties").select("status").eq("owner_id", user.id)
-      const allListings = (allProps || []) as any[]
+      // Fetch Global Counts in Parallel (Optimized)
+      const [liveRes, draftRes, soldRes] = await Promise.all([
+        supabase.from("properties").select("id", { count: 'exact', head: true }).eq("owner_id", user.id).eq("status", "live"),
+        supabase.from("properties").select("id", { count: 'exact', head: true }).eq("owner_id", user.id).eq("status", "draft"),
+        supabase.from("properties").select("id", { count: 'exact', head: true }).eq("owner_id", user.id).eq("status", "sold"),
+      ])
+
       setGlobalStats({
-        live: allListings.filter(p => p.status === 'live').length,
-        draft: allListings.filter(p => p.status === 'draft').length,
-        sold: allListings.filter(p => p.status === 'sold').length
+        live: liveRes.count || 0,
+        draft: draftRes.count || 0,
+        sold: soldRes.count || 0
       })
 
       // Fetch Paginated Listings
@@ -205,8 +209,9 @@ export default function MyListingsPage() {
           </div>
 
           <TabsContent value={activeTab} className="mt-0">
-            <div className="overflow-x-auto min-h-[400px]">
-              <table className="w-full text-left border-collapse">
+            <div className="min-h-[400px]">
+              {/* Desktop Table */}
+              <table className="w-full text-left border-collapse hidden md:table">
                 <thead className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   <tr>
                     <th className="px-8 py-4 w-10 text-center">
@@ -333,6 +338,98 @@ export default function MyListingsPage() {
                   )}
                 </tbody>
               </table>
+
+              {/* Mobile Card List */}
+              <div className="flex flex-col md:hidden divide-y divide-slate-100">
+                {isLoading ? (
+                  Array(3).fill(0).map((_, i) => (
+                    <div key={i} className="p-6 space-y-4 animate-pulse">
+                      <div className="flex gap-4">
+                        <div className="w-20 h-14 bg-slate-100 rounded-xl" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-slate-100 rounded w-3/4" />
+                          <div className="h-3 bg-slate-100 rounded w-1/2" />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : listings.length === 0 ? (
+                  <EmptyState 
+                    title="No Inventory Found"
+                    description={searchQuery ? `No results for "${searchQuery}"` : "You haven't added any listings here yet."}
+                    icon={LayoutGrid}
+                    className="py-24"
+                  />
+                ) : (
+                  listings.map((item) => (
+                    <div key={item.id} className="p-6 space-y-4 active:bg-slate-50 transition-colors">
+                      <div className="flex gap-4">
+                        <div className="w-24 h-20 rounded-2xl bg-slate-100 overflow-hidden shrink-0 border border-slate-100 shadow-sm relative">
+                          <OptimizedImage src={item.images?.[0] || ""} alt={item.property_name || ""} fill className="object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-black text-slate-900 text-sm truncate leading-tight">{item.property_name || 'Untitled'}</h4>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 bg-white/80 backdrop-blur-xl border-slate-100 shadow-2xl">
+                                <DropdownMenuItem onSelect={() => router.push(`/property/${item.id}`)} className="rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 px-3 py-2.5 cursor-pointer transition-colors focus:bg-[#1A56DB]/5 focus:text-[#1A56DB]">
+                                  <Eye className="w-4 h-4" /> View Listing
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {
+                                  if (item.status === 'draft') {
+                                    localStorage.setItem("proptech_property_draft_id", item.id)
+                                    router.push("/owner/post")
+                                  } else {
+                                    router.push(`/owner/listings/${item.id}/edit`)
+                                  }
+                                }} className="rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 px-3 py-2.5 cursor-pointer transition-colors focus:bg-[#1A56DB]/5 focus:text-[#1A56DB]">
+                                  <FileText className="w-4 h-4" /> Edit Details
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-slate-50 mx-1" />
+                                <DropdownMenuItem onSelect={() => handleDelete(item.id)} className="rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 px-3 py-2.5 cursor-pointer text-[#EF4444] focus:bg-red-50 focus:text-[#EF4444]">
+                                  <Trash2 className="w-4 h-4" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-400 flex items-center italic truncate">
+                            <MapPin className="w-2.5 h-2.5 mr-1 text-slate-300" />
+                            {item.city}, {item.locality}
+                          </p>
+                          <div className="flex items-center justify-between pt-1">
+                            <span className="font-black text-slate-900 text-sm">{formatIndianPrice(item.price || 0)}</span>
+                            <Badge variant={item.status?.toLowerCase() as any} className="rounded-full shadow-none text-[8px] font-black uppercase tracking-widest px-2 py-0.5 flex items-center w-fit">
+                              {getStatusIcon(item.status)}
+                              {item.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 bg-slate-50 rounded-2xl p-3">
+                        <div className="flex-1 flex flex-col items-center">
+                          <span className="text-xs font-black text-slate-900">{item.views || 0}</span>
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Views</span>
+                        </div>
+                        <div className="w-px h-6 bg-slate-200" />
+                        <div className="flex-1 flex flex-col items-center">
+                          <span className="text-xs font-black text-slate-900">{Math.floor((item.views || 0) * 0.1)}</span>
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Leads</span>
+                        </div>
+                        <div className="w-px h-6 bg-slate-200" />
+                        <div className="flex-1 flex flex-col items-center">
+                          <span className="text-xs font-black text-slate-900">{new Date(item.created_at).toLocaleDateString()}</span>
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Listed</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>

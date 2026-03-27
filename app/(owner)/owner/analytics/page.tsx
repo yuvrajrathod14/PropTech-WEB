@@ -61,16 +61,16 @@ export default function AnalyticsPage() {
 
         // Parallel fetching for analytics
         const [propsRes, enquiriesRes, wishlistsRes] = await Promise.all([
-          supabase.from("properties").select("*").eq("owner_id", user.id),
-          supabase.from("enquiries").select("*").eq("owner_id", user.id),
-          supabase.from("wishlists").select("id", { count: "exact" }).in("property_id", 
-            (await supabase.from("properties").select("id").eq("owner_id", user.id)).data?.map(p => p.id) || []
+          (supabase.from("properties") as any).select("*").eq("owner_id", user.id),
+          (supabase.from("enquiries") as any).select("*").eq("owner_id", user.id),
+          (supabase.from("wishlists") as any).select("id", { count: "exact" }).in("property_id",
+            (await (supabase.from("properties") as any).select("id").eq("owner_id", user.id)).data?.map((p: any) => p.id) || []
           )
         ])
 
         const listings = propsRes.data || []
         const enquiries = enquiriesRes.data || []
-        const totalViews = listings.reduce((sum, p) => sum + (p.views || 0), 0)
+        const totalViews = listings.reduce((sum: number, p: any) => sum + (p.view_count || 0), 0)
 
         // Mocking some trend data for visual appeal since we don't have historical logs
         const mockViewData = [
@@ -88,8 +88,8 @@ export default function AnalyticsPage() {
             { label: "Shortlisted", val: wishlistsRes.count || 0, icon: Heart, color: "text-rose-500", bg: "bg-rose-50", change: "+15%" },
           ],
           viewData: mockViewData,
-          topProperties: listings.sort((a,b) => (b.views || 0) - (a.views || 0)).slice(0, 5)
-        })
+          topProperties: [...listings].sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 5)
+        } as any)
       } catch (error) {
         console.error("Error fetching analytics:", error)
       } finally {

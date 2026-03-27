@@ -180,7 +180,7 @@ export default function BuyerChatPage() {
       <div className="container mx-auto px-4 flex-1 flex flex-col py-6">
         
         {/* Chat Wrapper */}
-        <div className="flex-1 bg-white rounded-[40px] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden flex flex-col md:flex-row">
+        <div className="flex-1 bg-white rounded-[40px] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden flex flex-col md:flex-row h-[calc(100vh-160px)] md:h-[calc(100vh-180px)] mb-20 md:mb-0">
           
           {/* Conversation List */}
           <aside className={cn(

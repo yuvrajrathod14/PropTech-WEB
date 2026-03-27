@@ -65,9 +65,9 @@ export default function OwnerDashboardPage() {
 
         // Parallel fetching
         const [propsRes, enquiriesRes, bookingsRes] = await Promise.all([
-          supabase.from("properties").select("*").eq("owner_id", user.id).order("created_at", { ascending: false }),
-          (supabase.from("enquiries") as any).select("*, sender:user_id(full_name), property:property_id(property_name)").eq("owner_id", user.id).order("created_at", { ascending: false }).limit(5),
-          (supabase.from("bookings") as any).select("id", { count: "exact" }).eq("owner_id", user.id)
+          supabase.from("properties").select("id, title, status, price, type, created_at, view_count, images").eq("owner_id", user.id).order("created_at", { ascending: false }),
+          supabase.from("enquiries").select("id, message, created_at, sender:sender_id(full_name), property:property_id(title, owner_id)").eq("property.owner_id", user.id).order("created_at", { ascending: false }).limit(5),
+          supabase.from("bookings").select("id, property:property_id!inner(owner_id)", { count: "exact" }).eq("property.owner_id", user.id)
         ])
 
         const listings = (propsRes.data || []) as any[]
@@ -235,9 +235,9 @@ export default function OwnerDashboardPage() {
                           <td className="px-8 py-5">
                             <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative">
-                                  <OptimizedImage src={item.images?.[0] || ""} alt={item.property_name} fill className="object-cover" />
+                                  <OptimizedImage src={item.images?.[0] || ""} alt={item.title} fill className="object-cover" />
                               </div>
-                              <span className="font-black text-slate-900 group-hover:text-[#1A56DB] transition-colors line-clamp-1">{item.property_name}</span>
+                              <span className="font-black text-slate-900 group-hover:text-[#1A56DB] transition-colors line-clamp-1">{item.title}</span>
                             </div>
                           </td>
                           <td className="px-8 py-5">
@@ -294,7 +294,7 @@ export default function OwnerDashboardPage() {
                           </div>
                           <div>
                               <h6 className="font-black text-slate-900 text-xs leading-none truncate max-w-[100px]">{item.sender?.full_name || "Buyer"}</h6>
-                              <span className="text-[10px] font-bold text-slate-400 italic truncate max-w-[100px] block mt-1">{item.property?.property_name}</span>
+                              <span className="text-[10px] font-bold text-slate-400 italic truncate max-w-[100px] block mt-1">{item.property?.title}</span>
                           </div>
                       </div>
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
@@ -302,7 +302,7 @@ export default function OwnerDashboardPage() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 font-medium line-clamp-2 italic">&quot;{item.message}&quot;</p>
-                    <Link href={`/owner/chat?user=${item.user_id}`}>
+                    <Link href={`/owner/chat`}>
                       <Button className="w-full bg-white hover:bg-[#1A56DB] hover:text-white text-[#1A56DB] border-none shadow-sm h-10 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95">
                         Reply Now
                       </Button>

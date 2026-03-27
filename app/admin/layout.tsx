@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 import { 
   LayoutDashboard, 
   Home, 
@@ -18,7 +19,11 @@ import {
   Clock,
   Zap,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Star,
+  Flag,
+  History,
+  MapPin
 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -26,18 +31,21 @@ import { cn } from "@/lib/utils"
 
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { name: 'Listings', href: '/admin/listings', icon: Home, count: 12 },
+  { name: 'Listings', href: '/admin/listings', icon: Home },
+  { name: 'Audit Queue', href: '/admin/listings/pending', icon: Clock },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Bookings', href: '/admin/bookings', icon: CreditCard },
+  { name: 'Reports', href: '/admin/reports', icon: Flag },
+  { name: 'Featured', href: '/admin/featured', icon: Star },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-  { name: 'Verifications', href: '/admin/verifications', icon: ShieldCheck, count: 5 },
-  { name: 'Audit Log', href: '/admin/audit-log', icon: Clock },
+  { name: 'Audit Log', href: '/admin/audit-log', icon: History },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { signOut } = useAuth()
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex">
@@ -69,12 +77,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <item.icon className={cn("w-5 h-5", isActive ? "text-primary" : "text-slate-400 group-hover:text-primary transition-colors")} />
                             {item.name}
                         </div>
-                        {item.count && (
+                        {(item as any).count && (
                             <span className={cn(
                                 "text-[10px] font-black px-2 py-0.5 rounded-lg",
                                 isActive ? "bg-primary text-white" : "bg-slate-100 text-slate-400"
                             )}>
-                                {item.count}
+                                {(item as any).count}
                             </span>
                         )}
                     </Link>
@@ -89,7 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <p className="text-xs font-black text-slate-900 truncate tracking-tight">System Admin</p>
                     <p className="text-[10px] font-bold text-slate-400 truncate italic">super@proptech.com</p>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50">
+                <Button variant="ghost" size="icon" onClick={() => signOut()} className="rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50">
                     <LogOut className="w-4 h-4" />
                 </Button>
              </div>

@@ -147,13 +147,13 @@ export function BookingClient({ property, user, profile }: any) { // eslint-disa
               </div>
 
               <div className="flex flex-wrap gap-4 mb-8">
-                <Badge variant="secondary" className="bg-slate-50 text-slate-600 border-none px-4 py-2 rounded-xl flex items-center gap-2">
+                <Badge variant="outline" className="bg-slate-50 text-slate-600 border-none px-4 py-2 rounded-xl flex items-center gap-2">
                   <BedDouble className="w-4 h-4" /> {property.beds} BHK
                 </Badge>
-                <Badge variant="secondary" className="bg-slate-50 text-slate-600 border-none px-4 py-2 rounded-xl flex items-center gap-2">
+                <Badge variant="outline" className="bg-slate-50 text-slate-600 border-none px-4 py-2 rounded-xl flex items-center gap-2">
                   <Square className="w-4 h-4" /> {property.area} Sq.Ft
                 </Badge>
-                <Badge variant="secondary" className="bg-slate-50 text-slate-600 border-none px-4 py-2 rounded-xl flex items-center gap-2 font-bold">
+                <Badge variant="outline" className="bg-slate-50 text-slate-600 border-none px-4 py-2 rounded-xl flex items-center gap-2 font-bold">
                   {formatIndianPrice(property.price)}
                 </Badge>
               </div>

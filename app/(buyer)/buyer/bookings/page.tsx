@@ -2,27 +2,31 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { 
-  ArrowRight, 
-  Download, 
+import {
+  ArrowRight,
+  Download,
   CheckCircle2,
   Clock,
   XCircle,
-  RotateCcw,
-  MapPin,
-  MessageSquare,
   History,
-  AlertCircle
+  AlertCircle,
+  CreditCard,
+  RotateCcw,
+  Loader2,
+  MapPin, // Keep MapPin as it's used in BookingCard
+  MessageSquare // Keep MessageSquare if it's used elsewhere, though not in the provided snippet
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatIndianPrice, cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import { TableRowSkeleton } from "@/components/ui/skeleton"
+import { BookingCardSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
 import { OptimizedImage } from "@/components/shared/optimized-image"
 import Link from "next/link"
+import { processRefund } from "@/app/actions/booking.actions"
+import { toast } from "sonner"
 
 const statusConfig = {
   paid: { label: "Paid", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: CheckCircle2 },
@@ -31,6 +35,8 @@ const statusConfig = {
   failed: { label: "Failed", color: "bg-red-50 text-red-600 border-red-100", icon: XCircle },
   confirmed: { label: "Confirmed", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: CheckCircle2 },
   requested: { label: "Requested", color: "bg-blue-50 text-blue-600 border-blue-100", icon: Clock },
+  refunded: { label: "Refunded", color: "bg-slate-50 text-slate-500 border-slate-100", icon: RotateCcw },
+  refund_requested: { label: "Refund Pending", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
 }
 
 export default function BookingsPage() {
@@ -46,7 +52,7 @@ export default function BookingsPage() {
       if (!user) return
 
       const [bookingsRes, visitsRes] = await Promise.all([
-        (supabase.from("bookings") as any).select("*, property:property_id(*)").eq("user_id", user.id).order("created_at", { ascending: false }),
+        (supabase.from("bookings") as any).select("*, property:property_id(*)").eq("buyer_id", user.id).order("created_at", { ascending: false }),
         (supabase.from("site_visits") as any).select("*, property:property_id(*)").eq("user_id", user.id).order("created_at", { ascending: false })
       ])
 
@@ -84,7 +90,7 @@ export default function BookingsPage() {
         <TabsContent value="all" className="space-y-6">
           {isLoading ? (
              <div className="space-y-4">
-               {Array(3).fill(0).map((_, i) => <TableRowSkeleton key={i} />)}
+               {Array(3).fill(0).map((_, i) => <BookingCardSkeleton key={i} />)}
              </div>
           ) : isEmpty ? (
             <EmptyState 
@@ -117,7 +123,7 @@ export default function BookingsPage() {
         <TabsContent value="visits" className="space-y-6">
            {isLoading ? (
              <div className="space-y-4">
-               {Array(3).fill(0).map((_, i) => <TableRowSkeleton key={i} />)}
+               {Array(3).fill(0).map((_, i) => <BookingCardSkeleton key={i} />)}
              </div>
           ) : data.visits.length === 0 ? (
             <EmptyState 
@@ -136,7 +142,7 @@ export default function BookingsPage() {
         <TabsContent value="payments" className="space-y-6">
            {isLoading ? (
              <div className="space-y-4">
-               {Array(3).fill(0).map((_, i) => <TableRowSkeleton key={i} />)}
+               {Array(3).fill(0).map((_, i) => <BookingCardSkeleton key={i} />)}
              </div>
           ) : data.bookings.length === 0 ? (
             <EmptyState 
@@ -157,9 +163,25 @@ export default function BookingsPage() {
 }
 
 function BookingCard({ booking, type }: { booking: any, type: 'payment' | 'visit' }) {
+  const [isRefunding, setIsRefunding] = useState(false)
   const status = statusConfig[booking.status as keyof typeof statusConfig] || statusConfig.pending
   const property = booking.property
   
+  const handleRefund = async () => {
+    if (!confirm("Are you sure you want to cancel this booking and request a refund? This action cannot be undone.")) return
+    
+    setIsRefunding(true)
+    try {
+      await processRefund(booking.id)
+      toast.success("Refund processed successfully")
+      // The page will revalidate via the action
+    } catch (error: any) {
+      toast.error(error.message || "Failed to process refund")
+    } finally {
+      setIsRefunding(false)
+    }
+  }
+
   if (!property) return null
 
   return (
@@ -223,7 +245,7 @@ function BookingCard({ booking, type }: { booking: any, type: 'payment' | 'visit
                 {type === 'payment' ? "Transaction ID" : "Visit Status"}
               </span>
               <p className="text-xs font-bold text-slate-400 font-mono tracking-tighter truncate italic uppercase">
-                {booking.payment_id || booking.status || "N/A"}
+                {booking.razorpay_payment_id || booking.status || "N/A"}
               </p>
             </div>
           </div>
@@ -231,11 +253,22 @@ function BookingCard({ booking, type }: { booking: any, type: 'payment' | 'visit
 
         {/* Actions */}
         <div className="flex flex-col md:flex-row lg:flex-col gap-3 md:justify-center shrink-0 w-full lg:w-48">
-          <Link href={`/property/${property.id}`} className="flex-1 lg:flex-none">
-            <Button className="w-full rounded-2xl h-12 px-6 font-black gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200">
-              View Property <ArrowRight className="w-4 h-4" />
+          {type === 'payment' && (booking.status === 'paid' || booking.status === 'confirmed') ? (
+            <Button 
+              onClick={handleRefund}
+              disabled={isRefunding}
+              className="w-full rounded-2xl h-12 px-6 font-black gap-2 bg-rose-500 hover:bg-rose-600 text-white shadow-xl shadow-rose-200"
+            >
+              {isRefunding ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+              Cancel & Refund
             </Button>
-          </Link>
+          ) : (
+            <Link href={`/property/${property.id}`} className="flex-1 lg:flex-none">
+              <Button className="w-full rounded-2xl h-12 px-6 font-black gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200">
+                View Property <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          )}
           <div className="flex gap-2">
             <Link href={`/buyer/chat?property=${property.id}`} className="flex-1">
               <Button variant="outline" className="w-full rounded-2xl h-12 border-slate-100 hover:bg-slate-50 gap-2 font-bold hover:border-[#1A56DB]/20">

@@ -25,8 +25,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function SettingsPage() {
+  const { signOut } = useAuth()
   return (
     <div className="space-y-8 pb-20">
       {/* Header */}
@@ -63,7 +65,7 @@ export default function SettingsPage() {
                     <h4 className="font-black text-xs uppercase tracking-widest">Danger Zone</h4>
                 </div>
                 <p className="text-[10px] font-bold text-red-500 leading-relaxed italic">Once you log out or delete your account, your active listings will be hidden.</p>
-                <Button variant="ghost" className="w-full justify-start h-11 rounded-xl text-red-600 hover:bg-red-100 font-black px-4 text-xs">
+                <Button variant="ghost" onClick={() => signOut()} className="w-full justify-start h-11 rounded-xl text-red-600 hover:bg-red-100 font-black px-4 text-xs">
                     Logout Account
                 </Button>
             </div>
